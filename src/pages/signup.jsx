@@ -7,6 +7,8 @@ import {
 } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import Login from "./login";
+import '../App.css';
+
 
 const Signup = () => {
   const [email, setEmail] = useState("");
@@ -42,7 +44,7 @@ const Signup = () => {
 
   return (
     <div style={{ padding: "2rem" }}>
-      <h2>Sign Up</h2>
+      <h2 className="text-3xl font-bold underline">Sign Up</h2>
       <form onSubmit={handleSignup}>
         <input
           type="email"
