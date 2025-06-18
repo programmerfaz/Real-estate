@@ -18,7 +18,7 @@ const Home = () => {
 
   return (
     <div style={{ padding: "2rem" }}>
-      <h1>Welcome to Real Estate App!</h1>
+      <h1>Welcome to Real Estate App!!!</h1>
       {userEmail ? (
         <p>You are logged in as: <strong>{userEmail}</strong></p>
       ) : (
