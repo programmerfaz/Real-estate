@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, MapPin, TrendingUp, Award, Users, Home as HomeIcon } from 'lucide-react';
-import PropertyCard from '../components/PropertyCard';
-import SearchBar from '../components/SearchBar';
+import PropertyCard from './components/PropertyCard';
+import SearchBar from './components/SearchBar';
 import { Link } from "react-router-dom";
 
 import { auth } from "../firebase";
