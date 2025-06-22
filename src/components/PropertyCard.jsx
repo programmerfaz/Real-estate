@@ -83,4 +83,4 @@ const PropertyCard = ({
   );
 };
 
-export default PropertyCard;
+export default PropertyCard; 

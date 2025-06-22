@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, MapPin, TrendingUp, Award, Users, Home as HomeIcon } from 'lucide-react';
 import PropertyCard from './components/PropertyCard';
 import SearchBar from './components/SearchBar';
-import { Link } from "react-router-dom";
+
 
 import { auth } from "../firebase";
 import {
@@ -12,6 +12,7 @@ import {
 } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 
+import { Link } from "react-router-dom";
 const Home = () => {
   const [userEmail, setUserEmail] = useState(null);
 
