@@ -3,11 +3,30 @@ import { TrendingUp, Award, Users, Home as HomeIcon } from 'lucide-react';
 import PropertyCard from '../components/PropertyCard';
 import SearchBar from '../components/SearchBar';
 import { Link } from "react-router-dom";
-
+import { supabase } from "../supabase";
 import { auth } from "../firebase";
 
 const Home = () => {
+
+  const formatPrice = (price) => `$${price.toLocaleString()}`;
+  const [allProperties, setAllProperties] = useState([]);
+  const [visibleProperties, setVisibleProperties] = useState(3);
+
+  useEffect(() => {
+    const fetchProperties = async () => {
+      const { data, error } = await supabase.from("properties").select("*");
+      if (error) {
+        console.error("Error fetching properties:", error.message);
+      } else {
+        setAllProperties(data);
+      }
+    };
+
+    fetchProperties();
+  }, []);
+
   const [userEmail, setUserEmail] = useState(null);
+  
 
   // Mock auth state for demonstration
   useEffect(() => {
@@ -21,81 +40,7 @@ const Home = () => {
     return () => unsubscribe();
   }, []);
 
-  const featuredProperties = [
-    {
-      id: '1',
-      title: 'Luxury Waterfront Villa',
-      location: 'Manama, Bahrain',
-      price: 2500,
-      beds: 5,
-      baths: 4,
-      area: 4500,
-      imageUrl: 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800',
-      type: 'Villa',
-      featured: true
-    },
-    {
-      id: '2',
-      title: 'Modern Downtown Apartment',
-      location: 'Manama City Center, Bahrain',
-      price: 1200,
-      beds: 3,
-      baths: 2,
-      area: 1800,
-      imageUrl: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800',
-      type: 'Apartment',
-      featured: false
-    },
-    {
-      id: '3',
-      title: 'Family Townhouse',
-      location: 'Riffa, Bahrain',
-      price: 1800,
-      beds: 4,
-      baths: 3,
-      area: 3200,
-      imageUrl: 'https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=800',
-      type: 'Townhouse',
-      featured: false
-    },
-    {
-      id: '4',
-      title: 'Seafront Penthouse',
-      location: 'Muharraq, Bahrain',
-      price: 3200,
-      beds: 4,
-      baths: 3,
-      area: 2800,
-      imageUrl: 'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=800',
-      type: 'Penthouse',
-      featured: true
-    },
-    {
-      id: '5',
-      title: 'Garden View Apartment',
-      location: 'Hamad Town, Bahrain',
-      price: 800,
-      beds: 2,
-      baths: 2,
-      area: 1200,
-      imageUrl: 'https://images.pexels.com/photos/1571463/pexels-photo-1571463.jpeg?auto=compress&cs=tinysrgb&w=800',
-      type: 'Apartment',
-      featured: false
-    },
-    {
-      id: '6',
-      title: 'Executive Villa',
-      location: 'Sitra, Bahrain',
-      price: 2200,
-      beds: 5,
-      baths: 4,
-      area: 4000,
-      imageUrl: 'https://images.pexels.com/photos/1396132/pexels-photo-1396132.jpeg?auto=compress&cs=tinysrgb&w=800',
-      type: 'Villa',
-      featured: false
-    }
-  ];
-
+  
   const stats = [
     { icon: HomeIcon, label: 'Properties Listed', value: '2,500+' },
     { icon: Users, label: 'Happy Clients', value: '1,200+' },
@@ -186,9 +131,15 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProperties.map((property) => (
-              <PropertyCard key={property.id} {...property} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            {allProperties.slice(0, visibleProperties).map((property) => (
+              <PropertyCard
+                key={property.id}
+                {...property}
+                formatPrice={formatPrice}
+                showViewButton={false} // Ensure the button is shown
+              />
             ))}
           </div>
 
@@ -210,7 +161,7 @@ const Home = () => {
             Join thousands of satisfied customers who found their dream properties with BahrainHomes.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/Buy">
+            <Link to="/buy">
               <button className="bg-white text-blue-600 px-8 py-3 rounded-lg hover:bg-gray-100 transition-colors font-medium cursor-pointer">
                 Browse Properties
               </button>
