@@ -148,7 +148,7 @@ const Buy = ({ viewMode }) => {
                     break;
                 case 'newest':
                 default:
-                    query = query.order('created_at', { ascending: false });
+                    query = query.order('id', { ascending: false });
                     break;
             }
 
