@@ -15,6 +15,7 @@ const Buy = ({ viewMode }) => {
     const [userEmail, setUserEmail] = useState(null);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [favourites, setFavourites] = useState([]);
 
     const handleLogout = () => {
         // Clear user session (adjust based on how you store auth info)
@@ -28,12 +29,53 @@ const Buy = ({ viewMode }) => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
             if (user) {
                 setUserEmail(user.email);
+
+                const fetchFavourites = async () => {
+                    const { data, error } = await supabase
+                        .from('favourites')
+                        .select('property_id')
+                        .eq('user_email', user.email);
+
+                    if (!error) {
+                        const ids = data.map((fav) => fav.property_id);
+                        setFavourites(ids);
+                    } else {
+                        console.error('Error fetching favourites:', error.message);
+                    }
+                };
+
+                fetchFavourites();
             } else {
                 setUserEmail(null);
+                setFavourites([]); // clear on logout
             }
         });
+
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        const fetchFavourites = async () => {
+            if (!userEmail) return;
+
+            const { data, error } = await supabase
+                .from("favourites")
+                .select("property_id")
+                .eq("user_email", userEmail);
+
+            if (error) {
+                console.error("Error fetching favourites:", error.message);
+            } else {
+                const favouriteIds = data.map((fav) => fav.property_id);
+                setFavourites(favouriteIds);
+            }
+        };
+
+        fetchFavourites();
+    }, [userEmail]);
+
+
+
     const [allProperties, setAllProperties] = useState([]);
     const [visibleProperties, setVisibleProperties] = useState(6);
     const [selectedLocations, setSelectedLocations] = useState([]);
@@ -45,6 +87,8 @@ const Buy = ({ viewMode }) => {
     const [selectedYearBuilt, setSelectedYearBuilt] = useState("Any");
     const [furnishedValue, setFurnishedValue] = useState('');
     const [selectedAmenities, setSelectedAmenities] = useState([]);
+
+
 
 
     useEffect(() => {
@@ -159,6 +203,33 @@ const Buy = ({ viewMode }) => {
             checked ? [...prev, value] : prev.filter((loc) => loc !== value)
         );
     };
+
+    const toggleFavourite = async (propertyId) => {
+        if (!userEmail) return;
+
+        const isFavourite = favourites.includes(propertyId);
+
+        if (isFavourite) {
+            const { error } = await supabase
+                .from('favourites')
+                .delete()
+                .eq('user_email', userEmail)
+                .eq('property_id', propertyId);
+
+            if (!error) {
+                setFavourites(favourites.filter((id) => id !== propertyId));
+            }
+        } else {
+            const { error } = await supabase.from('favourites').insert([
+                { user_email: userEmail, property_id: propertyId },
+            ]);
+
+            if (!error) {
+                setFavourites([...favourites, propertyId]);
+            }
+        }
+    };
+
 
 
 
@@ -535,7 +606,10 @@ const Buy = ({ viewMode }) => {
                                     key={property.id}
                                     {...property}
                                     formatPrice={formatPrice}
+                                    isFavourite={favourites.includes(property.id)}
+                                    toggleFavourite={() => toggleFavourite(property.id)}
                                 />
+
                             ))}
                         </div>
 

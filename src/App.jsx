@@ -3,7 +3,7 @@ import Signup from "./pages/signup";
 import Login from "./pages/login";
 import Home from "./pages/home";
 import Buy from "./pages/Buy";
-
+import Favorites from "./pages/Favourites";
 
 
 function App() {
@@ -15,7 +15,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/home" element={<Home />} /> 
       <Route path="/buy" element={<Buy />} />
-      
+      <Route path="/favourites" element={<Favorites />} />
     </Routes>
   );
 }

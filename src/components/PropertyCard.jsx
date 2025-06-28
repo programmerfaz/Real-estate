@@ -28,12 +28,14 @@ const PropertyCard = ({
   agent_email,
   address,
   showViewButton = true, // New prop to control button visibility
+  isFavourite,
+  toggleFavourite,
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const formatPrice = (val) => `${val.toLocaleString()} BHD`;
-  const [isFavorited, setIsFavorited] = useState(false);
+  // const [isFavorited, setIsFavorited] = useState(false);
 
   return (
     <>
@@ -63,17 +65,18 @@ const PropertyCard = ({
           <div className="absolute top-4 right-4">
             <button
               onClick={(e) => {
-                e.stopPropagation();
-                setIsFavorited(!isFavorited);
+                e.stopPropagation(); // prevent triggering view modal
+                toggleFavourite();
               }}
               className="p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
             >
               <Heart
-                className={`w-4 h-4 transition-colors ${isFavorited ? "text-red-500 fill-red-500" : "text-gray-600"
+                className={`w-5 h-5 transition-colors ${isFavourite ? "text-red-500 fill-red-500" : "text-gray-600"
                   }`}
               />
             </button>
           </div>
+
 
           {/* Image count */}
           <div className="absolute bottom-4 right-4 bg-black/50 text-white px-2 py-1 rounded-lg text-sm flex items-center gap-1">
