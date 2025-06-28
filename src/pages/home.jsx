@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { TrendingUp, Award, Users, Home as HomeIcon } from 'lucide-react';
+import { TrendingUp, Award, Users, LogOut, Menu, Filter, X, Home as HomeIcon } from 'lucide-react';
 import PropertyCard from '../components/PropertyCard';
 import SearchBar from '../components/SearchBar';
 import { Link } from "react-router-dom";
 import { supabase } from "../supabase";
 import { auth } from "../firebase";
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
 
   const formatPrice = (price) => `$${price.toLocaleString()}`;
   const [allProperties, setAllProperties] = useState([]);
   const [visibleProperties, setVisibleProperties] = useState(3);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -26,7 +28,14 @@ const Home = () => {
   }, []);
 
   const [userEmail, setUserEmail] = useState(null);
-  
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Clear user session (adjust based on how you store auth info)
+    localStorage.removeItem('userEmail');
+    // Redirect to sign-in
+    navigate('/login');
+  };
 
   // Mock auth state for demonstration
   useEffect(() => {
@@ -40,7 +49,7 @@ const Home = () => {
     return () => unsubscribe();
   }, []);
 
-  
+
   const stats = [
     { icon: HomeIcon, label: 'Properties Listed', value: '2,500+' },
     { icon: Users, label: 'Happy Clients', value: '1,200+' },
@@ -54,6 +63,7 @@ const Home = () => {
       <header className="bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
+            {/* Logo */}
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                 <HomeIcon className="w-6 h-6 text-white" />
@@ -61,6 +71,7 @@ const Home = () => {
               <span className="text-xl font-bold text-gray-900">Wealth Home</span>
             </div>
 
+            {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-8">
               <a href="./Home" className="text-gray-600 hover:text-blue-600 font-medium">Properties</a>
               <a href="./Buy" className="text-gray-600 hover:text-blue-600 font-medium">Buy</a>
@@ -69,19 +80,65 @@ const Home = () => {
               <a href="./About" className="text-gray-600 hover:text-blue-600 font-medium">About</a>
             </nav>
 
-            <div className="flex items-center gap-4">
-              {userEmail ? (
-                <span className="text-sm text-gray-600">Welcome, {userEmail.split('@')[0]}</span>
-              ) : (
-                <button className="text-gray-600 hover:text-blue-600 font-medium">Sign In</button>
-              )}
+            {/* Mobile menu toggle */}
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden text-gray-700 focus:outline-none"
+            >
+              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+
+            {/* Right section */}
+            <div className="hidden md:flex items-center gap-4">
               <Link to="/Favourites">
                 <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                   My Favourites
                 </button>
               </Link>
+              {userEmail ? (
+                <>
+                  <span className="text-sm text-gray-600">Welcome, {userEmail.split('@')[0]}</span>
+                  <LogOut
+                    onClick={handleLogout}
+                    className="w-5 h-5 text-red-600 hover:text-red-800 cursor-pointer"
+                  />
+                </>
+              ) : (
+                <button className="text-gray-600 hover:text-blue-600 font-medium">Sign In</button>
+              )}
             </div>
           </div>
+
+          {/* Mobile dropdown */}
+          {menuOpen && (
+            <div className="md:hidden bg-white border-t border-gray-200 pt-4 pb-4 space-y-2">
+              <a href="./Home" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Properties</a>
+              <a href="./Buy" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Buy</a>
+              <a href="./Rent" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Rent</a>
+              <a href="./AIHelp" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">AI Help</a>
+              <a href="./About" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">About</a>
+              <Link to="/Favourites">
+                <div className="px-4">
+                  <button className="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    My Favourites
+                  </button>
+                </div>
+              </Link>
+              {userEmail ? (
+                <div className="px-4 flex items-center justify-between mt-2">
+                  <span className="text-sm text-gray-600">Welcome, {userEmail.split('@')[0]}</span>
+                  <LogOut
+                    onClick={handleLogout}
+                    className="w-5 h-5 text-red-600 hover:text-red-800 cursor-pointer"
+                  />
+                </div>
+              ) : (
+                <div className="px-4">
+                  <button className="text-gray-600 hover:text-blue-600 font-medium">Sign In</button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
@@ -132,7 +189,7 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            
+
             {allProperties.slice(0, visibleProperties).map((property) => (
               <PropertyCard
                 key={property.id}
