@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { MapPin, Bed, Bath, Square, Car, Star, TrendingUp, Award, Users, LogOut, Menu, Home as HomeIcon, Filter, X } from "lucide-react";
+import { MapPin, Bed, Bath, Square, Car, Star, TrendingUp, Award, Users, LogOut, Menu, Home as HomeIcon, Filter, X, Search, Grid3X3, List, SortAsc, Bookmark, Share2, Eye, Calendar, DollarSign } from "lucide-react";
 import SearchBar from '../components/SearchBar';
 import PropertyCard from "../components/PropertyCard";
 import { Link } from "react-router-dom";
 import { supabase } from "../supabase";
 import { useNavigate } from 'react-router-dom';
-
-
 import { auth } from "../firebase";
 
 const formatPrice = (price) => `$${price.toLocaleString()}`;
@@ -16,20 +14,23 @@ const Buy = ({ viewMode }) => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const [favourites, setFavourites] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState('newest');
+    const [viewType, setViewType] = useState('grid');
+    const [isLoading, setIsLoading] = useState(false);
+    const [savedSearches, setSavedSearches] = useState([]);
+    const [showSaveSearch, setShowSaveSearch] = useState(false);
+    const [recentlyViewed, setRecentlyViewed] = useState([]);
 
     const handleLogout = () => {
-        // Clear user session (adjust based on how you store auth info)
         localStorage.removeItem('userEmail');
-        // Redirect to sign-in
         navigate('/login');
     };
 
-    // Mock auth state for demonstration    
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
             if (user) {
                 setUserEmail(user.email);
-
                 const fetchFavourites = async () => {
                     const { data, error } = await supabase
                         .from('favourites')
@@ -43,44 +44,24 @@ const Buy = ({ viewMode }) => {
                         console.error('Error fetching favourites:', error.message);
                     }
                 };
-
                 fetchFavourites();
+                
+                // Load recently viewed from localStorage
+                const viewed = JSON.parse(localStorage.getItem(`recentlyViewed_${user.email}`) || '[]');
+                setRecentlyViewed(viewed);
             } else {
                 setUserEmail(null);
-                setFavourites([]); // clear on logout
+                setFavourites([]);
             }
         });
 
         return () => unsubscribe();
     }, []);
 
-    useEffect(() => {
-        const fetchFavourites = async () => {
-            if (!userEmail) return;
-
-            const { data, error } = await supabase
-                .from("favourites")
-                .select("property_id")
-                .eq("user_email", userEmail);
-
-            if (error) {
-                console.error("Error fetching favourites:", error.message);
-            } else {
-                const favouriteIds = data.map((fav) => fav.property_id);
-                setFavourites(favouriteIds);
-            }
-        };
-
-        fetchFavourites();
-    }, [userEmail]);
-
-
-
     const [allProperties, setAllProperties] = useState([]);
-    const [visibleProperties, setVisibleProperties] = useState(6);
+    const [visibleProperties, setVisibleProperties] = useState(12);
     const [selectedLocations, setSelectedLocations] = useState([]);
     const [selectedPriceRange, setSelectedPriceRange] = useState("");
-    // values: "below50k", "50k-150k", "above150k", "custom"
     const [customPriceRange, setCustomPriceRange] = useState({ min: 20000, max: 200000 });
     const [selectedBedrooms, setSelectedBedrooms] = useState("Any");
     const [selectedBathrooms, setSelectedBathrooms] = useState("Any");
@@ -88,12 +69,18 @@ const Buy = ({ viewMode }) => {
     const [furnishedValue, setFurnishedValue] = useState('');
     const [selectedAmenities, setSelectedAmenities] = useState([]);
 
+    const navigate = useNavigate();
 
-
-
+    // Enhanced property fetching with search and sort
     useEffect(() => {
         const fetchProperties = async () => {
+            setIsLoading(true);
             let query = supabase.from("properties").select("*");
+
+            // Search functionality
+            if (searchQuery.trim()) {
+                query = query.or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+            }
 
             // Location filter
             if (selectedLocations.length > 0) {
@@ -116,7 +103,7 @@ const Buy = ({ viewMode }) => {
                 }
             }
 
-            // Bedrooms filter
+            // Other filters
             if (selectedBedrooms !== "Any") {
                 const minBedrooms = parseInt(selectedBedrooms);
                 if (!isNaN(minBedrooms)) {
@@ -148,7 +135,22 @@ const Buy = ({ viewMode }) => {
                 query = query.contains("amenities", selectedAmenities);
             }
 
-
+            // Sorting
+            switch (sortBy) {
+                case 'price-low':
+                    query = query.order('price', { ascending: true });
+                    break;
+                case 'price-high':
+                    query = query.order('price', { ascending: false });
+                    break;
+                case 'bedrooms':
+                    query = query.order('bedrooms', { ascending: false });
+                    break;
+                case 'newest':
+                default:
+                    query = query.order('created_at', { ascending: false });
+                    break;
+            }
 
             const { data, error } = await query;
 
@@ -157,20 +159,11 @@ const Buy = ({ viewMode }) => {
             } else {
                 setAllProperties(data);
             }
+            setIsLoading(false);
         };
 
         fetchProperties();
-    }, [selectedLocations,
-        selectedPriceRange,
-        customPriceRange,
-        selectedBedrooms,
-        selectedBathrooms,
-        selectedYearBuilt,
-        furnishedValue,
-        selectedAmenities
-    ]);
-
-    const navigate = useNavigate();
+    }, [selectedLocations, selectedPriceRange, customPriceRange, selectedBedrooms, selectedBathrooms, selectedYearBuilt, furnishedValue, selectedAmenities, searchQuery, sortBy]);
 
     const clearAllFilters = () => {
         setSelectedLocations([]);
@@ -181,8 +174,8 @@ const Buy = ({ viewMode }) => {
         setSelectedYearBuilt('Any');
         setFurnishedValue('');
         setSelectedAmenities([]);
+        setSearchQuery('');
     };
-
 
     const toggleAmenity = (amenity) => {
         setSelectedAmenities((prev) =>
@@ -193,9 +186,8 @@ const Buy = ({ viewMode }) => {
     };
 
     const handleLoadMore = () => {
-        setVisibleProperties((prev) => prev + 6);
+        setVisibleProperties((prev) => prev + 12);
     };
-
 
     const handleLocationChange = (e) => {
         const { value, checked } = e.target;
@@ -230,16 +222,59 @@ const Buy = ({ viewMode }) => {
         }
     };
 
+    const saveCurrentSearch = async () => {
+        if (!userEmail) return;
+        
+        const searchData = {
+            user_email: userEmail,
+            search_name: `Search ${new Date().toLocaleDateString()}`,
+            filters: {
+                locations: selectedLocations,
+                priceRange: selectedPriceRange,
+                customPriceRange,
+                bedrooms: selectedBedrooms,
+                bathrooms: selectedBathrooms,
+                yearBuilt: selectedYearBuilt,
+                furnished: furnishedValue,
+                amenities: selectedAmenities,
+                searchQuery
+            }
+        };
 
+        const { error } = await supabase.from('saved_searches').insert([searchData]);
+        if (!error) {
+            setShowSaveSearch(false);
+            // Refresh saved searches
+        }
+    };
 
+    const trackPropertyView = (propertyId) => {
+        if (!userEmail) return;
+        
+        const viewed = JSON.parse(localStorage.getItem(`recentlyViewed_${userEmail}`) || '[]');
+        const updatedViewed = [propertyId, ...viewed.filter(id => id !== propertyId)].slice(0, 10);
+        localStorage.setItem(`recentlyViewed_${userEmail}`, JSON.stringify(updatedViewed));
+        setRecentlyViewed(updatedViewed);
+    };
 
+    const getActiveFiltersCount = () => {
+        let count = 0;
+        if (selectedLocations.length > 0) count++;
+        if (selectedPriceRange) count++;
+        if (selectedBedrooms !== "Any") count++;
+        if (selectedBathrooms !== "Any") count++;
+        if (selectedYearBuilt !== "Any") count++;
+        if (furnishedValue) count++;
+        if (selectedAmenities.length > 0) count++;
+        if (searchQuery.trim()) count++;
+        return count;
+    };
 
     return (
         <>
-            <header className="bg-white shadow-sm border-b border-gray-100">
+            <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-4">
-                        {/* Logo */}
                         <div className="flex items-center gap-2">
                             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                                 <HomeIcon className="w-6 h-6 text-white" />
@@ -247,16 +282,14 @@ const Buy = ({ viewMode }) => {
                             <span className="text-xl font-bold text-gray-900">Wealth Home</span>
                         </div>
 
-                        {/* Desktop Nav */}
                         <nav className="hidden md:flex items-center gap-8">
                             <a href="./Home" className="text-gray-600 hover:text-blue-600 font-medium">Properties</a>
-                            <a href="./Buy" className="text-gray-600 hover:text-blue-600 font-medium">Buy</a>
+                            <a href="./Buy" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Buy</a>
                             <a href="./Rent" className="text-gray-600 hover:text-blue-600 font-medium">Rent</a>
                             <a href="./AIHelp" className="text-gray-600 hover:text-blue-600 font-medium">AI Help</a>
                             <a href="./About" className="text-gray-600 hover:text-blue-600 font-medium">About</a>
                         </nav>
 
-                        {/* Mobile menu toggle */}
                         <button
                             onClick={() => setMenuOpen(!menuOpen)}
                             className="md:hidden text-gray-700 focus:outline-none"
@@ -264,7 +297,6 @@ const Buy = ({ viewMode }) => {
                             {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
 
-                        {/* Right section */}
                         <div className="hidden md:flex items-center gap-4">
                             <Link to="/Favourites">
                                 <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
@@ -285,11 +317,10 @@ const Buy = ({ viewMode }) => {
                         </div>
                     </div>
 
-                    {/* Mobile dropdown */}
                     {menuOpen && (
                         <div className="md:hidden bg-white border-t border-gray-200 pt-4 pb-4 space-y-2">
                             <a href="./Home" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Properties</a>
-                            <a href="./Buy" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Buy</a>
+                            <a href="./Buy" className="block px-4 text-blue-600 font-medium">Buy</a>
                             <a href="./Rent" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Rent</a>
                             <a href="./AIHelp" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">AI Help</a>
                             <a href="./About" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">About</a>
@@ -318,13 +349,64 @@ const Buy = ({ viewMode }) => {
                 </div>
             </header>
 
+            {/* Enhanced Search Bar */}
+            <div className="bg-white border-b border-gray-200 py-4">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col lg:flex-row gap-4 items-center">
+                        <div className="relative flex-1 max-w-2xl">
+                            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                type="text"
+                                placeholder="Search by title, location, or description..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                            />
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                <option value="newest">Newest First</option>
+                                <option value="price-low">Price: Low to High</option>
+                                <option value="price-high">Price: High to Low</option>
+                                <option value="bedrooms">Most Bedrooms</option>
+                            </select>
+
+                            <div className="flex bg-gray-100 rounded-xl p-1">
+                                <button
+                                    onClick={() => setViewType('grid')}
+                                    className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
+                                        viewType === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
+                                    }`}
+                                >
+                                    <Grid3X3 className="w-4 h-4 mr-1" />
+                                    Grid
+                                </button>
+                                <button
+                                    onClick={() => setViewType('list')}
+                                    className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
+                                        viewType === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
+                                    }`}
+                                >
+                                    <List className="w-4 h-4 mr-1" />
+                                    List
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div className="flex h-screen">
-                {/* Filter Sidebar - Fixed position with responsive visibility */}
+                {/* Enhanced Filter Sidebar */}
                 <aside className={`w-80 bg-white shadow-lg border-r border-gray-200 overflow-y-auto transition-transform duration-300 ease-in-out
                                    lg:translate-x-0 lg:static lg:block
                                    ${isFilterOpen ? 'translate-x-0' : '-translate-x-full'} 
                                    fixed inset-y-0 left-0 z-50 lg:z-auto`}>
-                    {/* Mobile close button */}
                     <div className="lg:hidden flex justify-end p-4">
                         <button
                             onClick={() => setIsFilterOpen(false)}
@@ -333,22 +415,49 @@ const Buy = ({ viewMode }) => {
                             <X className="w-6 h-6" />
                         </button>
                     </div>
+                    
                     <div className="p-6">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-semibold text-gray-800">Custom Filter</h2>
-                            <button
-                                className="text-blue-600 text-sm font-medium hover:text-blue-800 transition-colors cursor-pointer"
-                                onClick={clearAllFilters}
-                            >
-                                Clear all
-                            </button>
+                            <h2 className="text-xl font-semibold text-gray-800">
+                                Filters {getActiveFiltersCount() > 0 && (
+                                    <span className="ml-2 bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full">
+                                        {getActiveFiltersCount()}
+                                    </span>
+                                )}
+                            </h2>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setShowSaveSearch(true)}
+                                    className="text-blue-600 text-sm font-medium hover:text-blue-800 transition-colors cursor-pointer"
+                                    disabled={!userEmail}
+                                >
+                                    <Bookmark className="w-4 h-4" />
+                                </button>
+                                <button
+                                    className="text-blue-600 text-sm font-medium hover:text-blue-800 transition-colors cursor-pointer"
+                                    onClick={clearAllFilters}
+                                >
+                                    Clear all
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Quick Stats */}
+                        <div className="mb-6 p-4 bg-blue-50 rounded-xl">
+                            <div className="text-sm text-blue-600 mb-1">Properties Found</div>
+                            <div className="text-2xl font-bold text-blue-800">{allProperties.length}</div>
+                            {allProperties.length > 0 && (
+                                <div className="text-xs text-blue-600 mt-1">
+                                    Avg. Price: {formatPrice(allProperties.reduce((sum, p) => sum + p.price, 0) / allProperties.length)}
+                                </div>
+                            )}
                         </div>
 
                         {/* Location */}
                         <div className="mb-6">
                             <h3 className="font-medium mb-3 text-gray-700">Location</h3>
                             <div className="space-y-2">
-                                {["Amwaj Islands", "Riffa", "Manama", "Seef"].map((location) => (
+                                {["Amwaj Islands", "Riffa", "Manama", "Seef", "Juffair", "Budaiya", "Saar"].map((location) => (
                                     <label key={location} className="flex items-center">
                                         <input
                                             type="checkbox"
@@ -412,11 +521,10 @@ const Buy = ({ viewMode }) => {
                                         checked={selectedPriceRange === "custom"}
                                         onChange={(e) => setSelectedPriceRange(e.target.value)}
                                     />
-                                    <span className="text-gray-700">Custom</span>
+                                    <span className="text-gray-700">Custom Range</span>
                                 </label>
                             </div>
 
-                            {/* Show custom slider only if "custom" is selected */}
                             {selectedPriceRange === "custom" && (
                                 <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                                     <div className="flex justify-between mb-3 text-sm font-medium text-gray-600">
@@ -425,7 +533,6 @@ const Buy = ({ viewMode }) => {
                                     </div>
 
                                     <div className="relative h-8">
-                                        {/* Min slider */}
                                         <input
                                             type="range"
                                             min={0}
@@ -443,7 +550,6 @@ const Buy = ({ viewMode }) => {
                                             style={{ zIndex: 3 }}
                                         />
 
-                                        {/* Max slider */}
                                         <input
                                             type="range"
                                             min={0}
@@ -461,10 +567,8 @@ const Buy = ({ viewMode }) => {
                                             style={{ zIndex: 2 }}
                                         />
 
-                                        {/* Slider track background */}
                                         <div className="absolute top-4 left-0 right-0 h-1 bg-gray-300 rounded"></div>
 
-                                        {/* Selected range highlight */}
                                         <div
                                             className="absolute top-4 h-1 bg-blue-500 rounded"
                                             style={{
@@ -582,51 +686,139 @@ const Buy = ({ viewMode }) => {
                     ></div>
                 )}
 
-                {/* Main Property Grid - Scrollable content */}
+                {/* Main Property Grid */}
                 <main className="flex-1 overflow-y-auto bg-gray-50">
                     <div className="p-6">
-                        {/* Mobile filter button */}
-                        <div className="lg:hidden mb-4">
-                            <button
-                                onClick={() => setIsFilterOpen(true)}
-                                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                <Filter className="w-4 h-4" />
-                                Filters
-                            </button>
+                        {/* Mobile filter button and results summary */}
+                        <div className="flex justify-between items-center mb-6">
+                            <div className="lg:hidden">
+                                <button
+                                    onClick={() => setIsFilterOpen(true)}
+                                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                    <Filter className="w-4 h-4" />
+                                    Filters
+                                    {getActiveFiltersCount() > 0 && (
+                                        <span className="bg-blue-800 text-white text-xs px-2 py-1 rounded-full">
+                                            {getActiveFiltersCount()}
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+
+                            <div className="text-sm text-gray-600">
+                                {isLoading ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                        Searching...
+                                    </div>
+                                ) : (
+                                    `Showing ${Math.min(visibleProperties, allProperties.length)} of ${allProperties.length} properties`
+                                )}
+                            </div>
                         </div>
 
-                        <h1 className="text-3xl font-bold mb-6 text-gray-800">
-                            {viewMode === "buy" ? "Buy Properties" : "Rent Properties"}
-                        </h1>
+                        {/* Recently Viewed (if user is logged in and has viewed properties) */}
+                        {userEmail && recentlyViewed.length > 0 && (
+                            <div className="mb-8">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <Eye className="w-5 h-5 text-blue-600" />
+                                    Recently Viewed
+                                </h3>
+                                <div className="flex gap-4 overflow-x-auto pb-2">
+                                    {recentlyViewed.slice(0, 5).map((propertyId) => {
+                                        const property = allProperties.find(p => p.id === propertyId);
+                                        if (!property) return null;
+                                        return (
+                                            <div key={propertyId} className="flex-shrink-0 w-48 bg-white rounded-lg shadow-sm border p-3">
+                                                <img src={property.image} alt={property.title} className="w-full h-24 object-cover rounded mb-2" />
+                                                <h4 className="font-medium text-sm truncate">{property.title}</h4>
+                                                <p className="text-blue-600 font-semibold text-sm">{formatPrice(property.price)}</p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {allProperties.slice(0, visibleProperties).map((property) => (
-                                <PropertyCard
-                                    key={property.id}
-                                    {...property}
-                                    formatPrice={formatPrice}
-                                    isFavourite={favourites.includes(property.id)}
-                                    toggleFavourite={() => toggleFavourite(property.id)}
-                                />
+                        {/* Properties Grid/List */}
+                        {allProperties.length === 0 && !isLoading ? (
+                            <div className="text-center py-12">
+                                <div className="text-gray-400 mb-4">
+                                    <HomeIcon className="w-16 h-16 mx-auto" />
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-600 mb-2">No properties found</h3>
+                                <p className="text-gray-500 mb-4">Try adjusting your search criteria or filters</p>
+                                <button
+                                    onClick={clearAllFilters}
+                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                    Clear All Filters
+                                </button>
+                            </div>
+                        ) : (
+                            <div className={viewType === 'grid' 
+                                ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" 
+                                : "space-y-4"
+                            }>
+                                {allProperties.slice(0, visibleProperties).map((property) => (
+                                    <div key={property.id} onClick={() => trackPropertyView(property.id)}>
+                                        <PropertyCard
+                                            {...property}
+                                            formatPrice={formatPrice}
+                                            isFavourite={favourites.includes(property.id)}
+                                            toggleFavourite={() => toggleFavourite(property.id)}
+                                            viewType={viewType}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
-                            ))}
-                        </div>
-
+                        {/* Load More Button */}
                         {visibleProperties < allProperties.length && (
                             <div className="flex justify-center mt-8">
                                 <button
                                     onClick={handleLoadMore}
                                     className="bg-blue-600 text-white px-8 py-3 rounded-lg shadow-md hover:bg-blue-700 
-                                               transition-colors font-medium"
+                                               transition-colors font-medium flex items-center gap-2"
                                 >
                                     Load More Properties
+                                    <span className="bg-blue-700 text-white text-sm px-2 py-1 rounded-full">
+                                        +{Math.min(12, allProperties.length - visibleProperties)}
+                                    </span>
                                 </button>
                             </div>
                         )}
                     </div>
                 </main>
             </div>
+
+            {/* Save Search Modal */}
+            {showSaveSearch && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full">
+                        <h3 className="text-lg font-semibold mb-4">Save This Search</h3>
+                        <p className="text-gray-600 mb-4">
+                            Save your current search criteria to get notified when new matching properties are available.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={saveCurrentSearch}
+                                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                Save Search
+                            </button>
+                            <button
+                                onClick={() => setShowSaveSearch(false)}
+                                className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
