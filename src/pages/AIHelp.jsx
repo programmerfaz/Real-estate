@@ -73,6 +73,7 @@ const AIHelp = () => {
   const [aiThinking, setAiThinking] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
   const navigate = useNavigate();
 
   // OpenAI API configuration
@@ -177,7 +178,12 @@ Please specify your property requirements for analysis.`
   }, [aiPersonality]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: "smooth",
+        block: "end"
+      });
+    }
   };
 
   const handleLogout = async () => {
@@ -644,9 +650,9 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Enhanced Chat Interface */}
             <div className="lg:col-span-3">
-              <div className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border border-white/20">
+              <div className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border border-white/20 flex flex-col h-[70vh]">
                 {/* Chat Header */}
-                <div className="bg-gradient-to-r from-blue-600/80 to-purple-600/80 backdrop-blur-md p-6 border-b border-white/20">
+                <div className="bg-gradient-to-r from-blue-600/80 to-purple-600/80 backdrop-blur-md p-6 border-b border-white/20 flex-shrink-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="relative">
@@ -685,8 +691,12 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                   </div>
                 </div>
 
-                {/* Messages */}
-                <div className="h-96 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-transparent to-black/10">
+                {/* Messages Container - Fixed Height with Scroll */}
+                <div 
+                  ref={chatContainerRef}
+                  className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-transparent to-black/10 min-h-0"
+                  style={{ maxHeight: 'calc(70vh - 200px)' }}
+                >
                   {messages.map((message) => (
                     <div
                       key={message.id}
@@ -695,7 +705,7 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                       <div className={`flex items-start max-w-xs lg:max-w-md ${
                         message.type === 'user' ? 'flex-row-reverse' : 'flex-row'
                       }`}>
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                           message.type === 'user' 
                             ? 'bg-gradient-to-r from-blue-500 to-purple-600 ml-3' 
                             : 'bg-gradient-to-r from-gray-600 to-gray-700 mr-3'
@@ -737,7 +747,7 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                   {(isLoading || isTyping || aiThinking) && (
                     <div className="flex justify-start">
                       <div className="flex items-start">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-600 to-gray-700 flex items-center justify-center mr-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-600 to-gray-700 flex items-center justify-center mr-3 flex-shrink-0">
                           <Bot className="w-5 h-5 text-white" />
                         </div>
                         <div className="bg-white/10 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/20">
@@ -758,17 +768,18 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Enhanced Input */}
-                <div className="border-t border-white/20 p-6 bg-white/5 backdrop-blur-md">
-                  <div className="flex items-center space-x-4">
+                {/* Enhanced Input - Fixed at Bottom */}
+                <div className="border-t border-white/20 p-6 bg-white/5 backdrop-blur-md flex-shrink-0">
+                  <div className="flex items-end space-x-4">
                     <div className="flex-1 relative">
                       <textarea
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder="Ask me anything about properties in Bahrain..."
-                        className="w-full px-6 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-white placeholder-white/50"
+                        className="w-full px-6 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-white placeholder-white/50 max-h-32"
                         rows="2"
+                        style={{ minHeight: '60px' }}
                       />
                       <div className="absolute right-3 bottom-3 flex items-center gap-2">
                         <button
@@ -784,7 +795,7 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                     <button
                       onClick={handleSendMessage}
                       disabled={!inputMessage.trim() || isLoading}
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-2xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-2xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 flex-shrink-0"
                     >
                       <Send className="w-5 h-5" />
                     </button>
@@ -801,7 +812,7 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                   <Lightbulb className="w-5 h-5 mr-2 text-yellow-400" />
                   Smart Questions
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-80 overflow-y-auto">
                   {smartQuestions.map((category, categoryIndex) => (
                     <div key={categoryIndex}>
                       <h4 className="text-sm font-medium text-blue-300 mb-2">{category.category}</h4>
