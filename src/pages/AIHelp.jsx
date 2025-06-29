@@ -39,40 +39,57 @@ const AIHelp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [allProperties, setAllProperties] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
-  const [userPreferences, setUserPreferences] = useState({
-    budget: '',
-    location: '',
-    bedrooms: '',
-    propertyType: '',
-    lifestyle: ''
-  });
-  const [marketInsights, setMarketInsights] = useState(null);
+  const [favourites, setFavourites] = useState([]);
   const [activeTab, setActiveTab] = useState('chat');
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
 
-  // OpenAI API configuration
-  const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY || 'your-openai-api-key-here';
+  // OpenAI API configuration - using import.meta.env for Vite
+  const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || 'your-openai-api-key-here';
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         setUserEmail(user.email);
+        // Fetch user favourites
+        fetchFavourites(user.email);
       } else {
         setUserEmail(null);
+        setFavourites([]);
       }
     });
     return () => unsubscribe();
   }, []);
 
+  const fetchFavourites = async (email) => {
+    try {
+      const { data, error } = await supabase
+        .from('favourites')
+        .select('property_id')
+        .eq('user_email', email);
+
+      if (!error && data) {
+        const ids = data.map((fav) => fav.property_id);
+        setFavourites(ids);
+      }
+    } catch (error) {
+      console.error('Error fetching favourites:', error);
+    }
+  };
+
   useEffect(() => {
     const fetchProperties = async () => {
-      const { data, error } = await supabase.from("properties").select("*");
-      if (error) {
-        console.error("Error fetching properties:", error.message);
-      } else {
-        setAllProperties(data);
-        generateInitialRecommendations(data);
+      try {
+        const { data, error } = await supabase.from("properties").select("*");
+        if (error) {
+          console.error("Error fetching properties:", error.message);
+        } else {
+          setAllProperties(data || []);
+          generateInitialRecommendations(data || []);
+        }
+      } catch (error) {
+        console.error("Error in fetchProperties:", error);
+        setAllProperties([]);
       }
     };
     fetchProperties();
@@ -107,16 +124,26 @@ How can I assist you today?`,
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('userEmail');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      localStorage.removeItem('userEmail');
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const generateInitialRecommendations = (properties) => {
+    if (!properties || properties.length === 0) {
+      setRecommendations([]);
+      return;
+    }
+
     // Generate smart recommendations based on popular properties
     const featured = properties.filter(p => p.featured).slice(0, 3);
-    const highRated = properties.sort((a, b) => b.rating - a.rating).slice(0, 3);
-    const affordable = properties.sort((a, b) => a.price - b.price).slice(0, 3);
+    const highRated = [...properties].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 3);
+    const affordable = [...properties].sort((a, b) => (a.price || 0) - (b.price || 0)).slice(0, 3);
     
     setRecommendations([
       { title: 'Featured Properties', properties: featured, icon: Star },
@@ -125,27 +152,37 @@ How can I assist you today?`,
     ]);
   };
 
-  const generateMarketInsights = (properties) => {
-    const avgPrice = properties.reduce((sum, p) => sum + p.price, 0) / properties.length;
-    const locations = [...new Set(properties.map(p => p.location))];
-    const priceByLocation = locations.map(loc => {
-      const locationProps = properties.filter(p => p.location.includes(loc));
-      return {
-        location: loc,
-        avgPrice: locationProps.reduce((sum, p) => sum + p.price, 0) / locationProps.length,
-        count: locationProps.length
-      };
-    });
+  const toggleFavourite = async (propertyId) => {
+    if (!userEmail) {
+      alert("Please sign in to manage favourites.");
+      return;
+    }
 
-    setMarketInsights({
-      avgPrice,
-      totalProperties: properties.length,
-      priceByLocation: priceByLocation.sort((a, b) => b.avgPrice - a.avgPrice),
-      trends: {
-        growth: '+12%',
-        hottest: priceByLocation[0]?.location || 'Manama'
+    const isFavourite = favourites.includes(propertyId);
+
+    try {
+      if (isFavourite) {
+        const { error } = await supabase
+          .from('favourites')
+          .delete()
+          .eq('user_email', userEmail)
+          .eq('property_id', propertyId);
+
+        if (!error) {
+          setFavourites(favourites.filter((id) => id !== propertyId));
+        }
+      } else {
+        const { error } = await supabase.from('favourites').insert([
+          { user_email: userEmail, property_id: propertyId },
+        ]);
+
+        if (!error) {
+          setFavourites([...favourites, propertyId]);
+        }
       }
-    });
+    } catch (error) {
+      console.error('Error toggling favourite:', error);
+    }
   };
 
   const callOpenAI = async (userMessage, context = '') => {
@@ -185,7 +222,7 @@ Guidelines:
       });
 
       if (!response.ok) {
-        throw new Error('OpenAI API request failed');
+        throw new Error(`OpenAI API request failed: ${response.status}`);
       }
 
       const data = await response.json();
@@ -212,7 +249,7 @@ Guidelines:
 
     // Create context from properties for AI
     const propertiesContext = allProperties.slice(0, 10).map(p => 
-      `${p.title} in ${p.location} - ${p.bedrooms}BR/${p.bathrooms}BA - $${p.price.toLocaleString()}`
+      `${p.title} in ${p.location} - ${p.bedrooms}BR/${p.bathrooms}BA - $${p.price?.toLocaleString() || 'N/A'}`
     ).join('; ');
 
     try {
@@ -260,7 +297,14 @@ Guidelines:
     setTimeout(() => handleSendMessage(), 100);
   };
 
-  const formatPrice = (price) => `$${price.toLocaleString()}`;
+  const formatPrice = (price) => `$${(price || 0).toLocaleString()}`;
+
+  // Safe calculation for average price
+  const calculateAveragePrice = () => {
+    if (!allProperties || allProperties.length === 0) return 0;
+    const total = allProperties.reduce((sum, p) => sum + (p.price || 0), 0);
+    return Math.round(total / allProperties.length / 1000);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -517,24 +561,32 @@ Guidelines:
               <p className="text-xl text-gray-600">AI-curated properties based on market trends and user preferences</p>
             </div>
 
-            {recommendations.map((category, index) => (
-              <div key={index} className="bg-white rounded-2xl shadow-lg p-8">
-                <div className="flex items-center mb-6">
-                  <category.icon className="w-8 h-8 text-blue-600 mr-3" />
-                  <h3 className="text-2xl font-bold text-gray-900">{category.title}</h3>
+            {recommendations.length > 0 ? (
+              recommendations.map((category, index) => (
+                <div key={index} className="bg-white rounded-2xl shadow-lg p-8">
+                  <div className="flex items-center mb-6">
+                    <category.icon className="w-8 h-8 text-blue-600 mr-3" />
+                    <h3 className="text-2xl font-bold text-gray-900">{category.title}</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {category.properties.map((property) => (
+                      <PropertyCard
+                        key={property.id}
+                        {...property}
+                        formatPrice={formatPrice}
+                        showViewButton={true}
+                        isFavourite={favourites.includes(property.id)}
+                        toggleFavourite={() => toggleFavourite(property.id)}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {category.properties.map((property) => (
-                    <PropertyCard
-                      key={property.id}
-                      {...property}
-                      formatPrice={formatPrice}
-                      showViewButton={true}
-                    />
-                  ))}
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500">Loading recommendations...</p>
               </div>
-            ))}
+            )}
           </div>
         )}
 
@@ -561,7 +613,7 @@ Guidelines:
                   <DollarSign className="w-6 h-6 text-green-600" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
-                  ${Math.round(allProperties.reduce((sum, p) => sum + p.price, 0) / allProperties.length / 1000)}K
+                  ${calculateAveragePrice()}K
                 </div>
                 <div className="text-gray-600">Avg. Price</div>
               </div>
@@ -584,34 +636,36 @@ Guidelines:
             </div>
 
             {/* Price by Location */}
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-6">Average Prices by Location</h3>
-              <div className="space-y-4">
-                {[...new Set(allProperties.map(p => p.location))].map((location, index) => {
-                  const locationProps = allProperties.filter(p => p.location.includes(location));
-                  const avgPrice = locationProps.reduce((sum, p) => sum + p.price, 0) / locationProps.length;
-                  const maxPrice = Math.max(...allProperties.map(p => p.price));
-                  const percentage = (avgPrice / maxPrice) * 100;
-                  
-                  return (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium text-gray-900">{location}</span>
-                          <span className="text-blue-600 font-semibold">${Math.round(avgPrice / 1000)}K</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${percentage}%` }}
-                          ></div>
+            {allProperties.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-lg p-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-6">Average Prices by Location</h3>
+                <div className="space-y-4">
+                  {[...new Set(allProperties.map(p => p.location))].map((location, index) => {
+                    const locationProps = allProperties.filter(p => p.location.includes(location));
+                    const avgPrice = locationProps.reduce((sum, p) => sum + (p.price || 0), 0) / locationProps.length;
+                    const maxPrice = Math.max(...allProperties.map(p => p.price || 0));
+                    const percentage = maxPrice > 0 ? (avgPrice / maxPrice) * 100 : 0;
+                    
+                    return (
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-medium text-gray-900">{location}</span>
+                            <span className="text-blue-600 font-semibold">${Math.round(avgPrice / 1000)}K</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* AI Insights */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100">
