@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { TrendingUp, Award, Users, LogOut, Menu, Filter, X, Home as HomeIcon } from 'lucide-react';
+import { TrendingUp, Award, Users, LogOut, Menu, Filter, X, Home as HomeIcon, ArrowRight, Play, MapPin, Building, Key, Shield } from 'lucide-react';
 import PropertyCard from '../components/PropertyCard';
-import SearchBar from '../components/SearchBar';
 import { Link } from "react-router-dom";
 import { supabase } from "../supabase";
 import { auth } from "../firebase";
@@ -49,12 +48,29 @@ const Home = () => {
     return () => unsubscribe();
   }, []);
 
-
   const stats = [
     { icon: HomeIcon, label: 'Properties Listed', value: '2,500+' },
     { icon: Users, label: 'Happy Clients', value: '1,200+' },
     { icon: Award, label: 'Years Experience', value: '15+' },
     { icon: TrendingUp, label: 'Properties Sold', value: '800+' }
+  ];
+
+  const features = [
+    {
+      icon: Building,
+      title: "Premium Properties",
+      description: "Handpicked luxury homes and apartments across Bahrain's most prestigious locations"
+    },
+    {
+      icon: Key,
+      title: "Easy Process",
+      description: "Streamlined buying and renting process with expert guidance every step of the way"
+    },
+    {
+      icon: Shield,
+      title: "Trusted Service",
+      description: "15+ years of experience with over 1,200 satisfied clients and counting"
+    }
   ];
 
   return (
@@ -142,23 +158,93 @@ const Home = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 py-20">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-            Find Your Dream Home
-            <span className="block text-blue-300">in Bahrain</span>
-          </h1>
-          <p className="text-xl text-blue-100 mb-12 max-w-3xl mx-auto">
-            Discover the perfect property from our extensive collection of premium homes,
-            apartments, and commercial spaces across the Kingdom of Bahrain.
-          </p>
+      {/* Enhanced Hero Section */}
+      <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 py-24 overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }}></div>
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center px-4 py-2 bg-blue-800/50 rounded-full text-blue-200 text-sm font-medium mb-6">
+                <MapPin className="w-4 h-4 mr-2" />
+                Serving All of Bahrain
+              </div>
+              
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+                Find Your
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-cyan-300">
+                  Dream Home
+                </span>
+              </h1>
+              
+              <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                Discover premium properties across Bahrain's most prestigious locations. 
+                From luxury villas to modern apartments, your perfect home awaits.
+              </p>
 
-          <div className="max-w-4xl mx-auto">
-            <SearchBar />
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
+                <Link to="/buy">
+                  <button className="group bg-white text-blue-900 px-8 py-4 rounded-xl hover:bg-blue-50 transition-all duration-300 font-semibold text-lg flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105">
+                    Explore Properties
+                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </Link>
+                
+                <button className="group border-2 border-white text-white px-8 py-4 rounded-xl hover:bg-white hover:text-blue-900 transition-all duration-300 font-semibold text-lg flex items-center justify-center">
+                  <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                  Watch Tour
+                </button>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-3 gap-6 text-center lg:text-left">
+                <div>
+                  <div className="text-3xl font-bold text-white">2,500+</div>
+                  <div className="text-blue-200 text-sm">Properties</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-white">1,200+</div>
+                  <div className="text-blue-200 text-sm">Happy Clients</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-white">15+</div>
+                  <div className="text-blue-200 text-sm">Years Experience</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Content - Feature Cards */}
+            <div className="space-y-6">
+              {features.map((feature, index) => (
+                <div 
+                  key={index}
+                  className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 hover:bg-white/15 transition-all duration-300 transform hover:scale-105"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <feature.icon className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
+                      <p className="text-blue-100 leading-relaxed">{feature.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* Floating Elements */}
+        <div className="absolute top-20 right-10 w-20 h-20 bg-blue-400/20 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute bottom-20 left-10 w-32 h-32 bg-cyan-400/20 rounded-full blur-xl animate-pulse delay-1000"></div>
       </section>
 
       {/* Stats Section */}
@@ -166,8 +252,8 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div key={index} className="text-center group">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
                   <stat.icon className="w-8 h-8 text-blue-600" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
@@ -189,13 +275,12 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
             {allProperties.slice(0, visibleProperties).map((property) => (
               <PropertyCard
                 key={property.id}
                 {...property}
                 formatPrice={formatPrice}
-                showViewButton={false} // Ensure the button is shown
+                showViewButton={false}
               />
             ))}
           </div>
@@ -215,7 +300,7 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold text-white mb-6">Ready to Find Your Perfect Home?</h2>
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of satisfied customers who found their dream properties with BahrainHomes.
+            Join thousands of satisfied customers who found their dream properties with Wealth Home.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/buy">
