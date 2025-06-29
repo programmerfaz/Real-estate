@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { TrendingUp, Award, Users, LogOut, Menu, Filter, X, Home as HomeIcon, ArrowRight, Play, MapPin, Building, Key, Shield } from 'lucide-react';
+import { TrendingUp, Award, Users, LogOut, Menu, Filter, X, Home as HomeIcon, ArrowRight, MessageCircle, MapPin, Building, Key, Shield } from 'lucide-react';
 import PropertyCard from '../components/PropertyCard';
 import { Link } from "react-router-dom";
 import { supabase } from "../supabase";
@@ -197,10 +197,12 @@ const Home = () => {
                   </button>
                 </Link>
                 
-                <button className="group border-2 border-white text-white px-8 py-4 rounded-xl hover:bg-white hover:text-blue-900 transition-all duration-300 font-semibold text-lg flex items-center justify-center">
-                  <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                  Watch Tour
-                </button>
+                <Link to="/AIHelp">
+                  <button className="group border-2 border-white text-white px-8 py-4 rounded-xl hover:bg-white hover:text-blue-900 transition-all duration-300 font-semibold text-lg flex items-center justify-center">
+                    <MessageCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                    Get Expert Help
+                  </button>
+                </Link>
               </div>
 
               {/* Quick Stats */}
