@@ -133,38 +133,37 @@ const AIHelp = () => {
     // Enhanced welcome message with personality
     if (messages.length === 0) {
       const welcomeMessages = {
-        professional: `🏠 Welcome to Wealth Home's AI Assistant! I'm your intelligent property advisor, powered by advanced AI technology.
+        professional: `🏠 Welcome to Wealth Home's AI Assistant! I'm here to help you find the perfect property in Bahrain.
 
 I can help you with:
-🎯 Personalized property recommendations
-📊 Real-time market analysis & trends  
-💰 Investment opportunity insights
-🏘️ Neighborhood deep-dive reports
-📈 Price prediction & valuation
-🔍 Smart property matching
+🎯 Property recommendations based on your criteria
+📊 Market analysis and pricing insights  
+💰 Investment opportunities
+🏘️ Neighborhood information
+📈 Property valuations
 
-What would you like to explore today?`,
-        friendly: `Hey there! 👋 I'm your AI property buddy, and I'm super excited to help you find your dream home in Bahrain!
+What type of property are you looking for today?`,
+        friendly: `Hey there! 👋 Welcome to Wealth Home! I'm your AI property buddy and I'm excited to help you find your dream home in Bahrain!
 
-I'm like having a real estate expert in your pocket 24/7. I can:
-✨ Find properties that match your vibe
-📍 Give you the inside scoop on neighborhoods  
-💡 Share investment tips and tricks
-🎨 Help you visualize your future home
-📱 Keep you updated on market trends
+I can help you:
+✨ Find properties that match your needs
+📍 Learn about different neighborhoods  
+💡 Get investment advice
+🎨 Explore different property types
+📱 Stay updated on market trends
 
-Ready to start this amazing journey together?`,
-        expert: `Greetings. I am the Wealth Home AI Property Intelligence System - your advanced real estate analytics engine.
+What kind of home are you dreaming of?`,
+        expert: `Welcome to Wealth Home's Advanced Property Intelligence System.
 
-My capabilities include:
-🧠 Deep learning property analysis
-⚡ Real-time market data processing
-🎯 Precision-targeted recommendations
-📊 Predictive market modeling
-🔬 Comprehensive investment analysis
-🌐 Multi-dimensional property scoring
+I provide:
+🧠 Data-driven property analysis
+⚡ Real-time market intelligence
+🎯 Precision property matching
+📊 Investment performance metrics
+🔬 Comprehensive market research
+🌐 Portfolio optimization strategies
 
-Initiating consultation protocol. How may I assist with your property objectives?`
+Please specify your property requirements for analysis.`
       };
 
       setMessages([{
@@ -243,13 +242,102 @@ Initiating consultation protocol. How may I assist with your property objectives
     }
   };
 
+  const getPropertyRecommendations = (userQuery) => {
+    const query = userQuery.toLowerCase();
+    let filteredProperties = [...allProperties];
+
+    // Location filtering
+    if (query.includes('manama')) {
+      filteredProperties = filteredProperties.filter(p => p.location.toLowerCase().includes('manama'));
+    } else if (query.includes('riffa')) {
+      filteredProperties = filteredProperties.filter(p => p.location.toLowerCase().includes('riffa'));
+    } else if (query.includes('amwaj')) {
+      filteredProperties = filteredProperties.filter(p => p.location.toLowerCase().includes('amwaj'));
+    } else if (query.includes('seef')) {
+      filteredProperties = filteredProperties.filter(p => p.location.toLowerCase().includes('seef'));
+    } else if (query.includes('juffair')) {
+      filteredProperties = filteredProperties.filter(p => p.location.toLowerCase().includes('juffair'));
+    }
+
+    // Price filtering
+    if (query.includes('under') || query.includes('below')) {
+      const priceMatch = query.match(/(\d+)k?/);
+      if (priceMatch) {
+        const price = parseInt(priceMatch[1]) * (query.includes('k') ? 1000 : 1);
+        filteredProperties = filteredProperties.filter(p => p.price < price);
+      }
+    }
+
+    // Bedroom filtering
+    if (query.includes('bedroom') || query.includes('br')) {
+      const bedroomMatch = query.match(/(\d+)[\s-]*(bedroom|br)/);
+      if (bedroomMatch) {
+        const bedrooms = parseInt(bedroomMatch[1]);
+        filteredProperties = filteredProperties.filter(p => p.bedrooms >= bedrooms);
+      }
+    }
+
+    // Property type filtering
+    if (query.includes('villa')) {
+      filteredProperties = filteredProperties.filter(p => p.type?.toLowerCase().includes('villa'));
+    } else if (query.includes('apartment')) {
+      filteredProperties = filteredProperties.filter(p => p.type?.toLowerCase().includes('apartment'));
+    }
+
+    // Features filtering
+    if (query.includes('pool') || query.includes('swimming')) {
+      filteredProperties = filteredProperties.filter(p => 
+        p.amenities?.some(amenity => amenity.toLowerCase().includes('pool'))
+      );
+    }
+
+    if (query.includes('beach') || query.includes('waterfront')) {
+      filteredProperties = filteredProperties.filter(p => 
+        p.amenities?.some(amenity => amenity.toLowerCase().includes('beach')) ||
+        p.title.toLowerCase().includes('waterfront') ||
+        p.description?.toLowerCase().includes('beach')
+      );
+    }
+
+    return filteredProperties.slice(0, 5); // Return top 5 matches
+  };
+
   const callOpenAI = async (userMessage, context = '') => {
     setAiThinking(true);
     
+    // Check if user is asking for property recommendations
+    const query = userMessage.toLowerCase();
+    const isPropertySearch = query.includes('property') || query.includes('properties') || 
+                           query.includes('house') || query.includes('home') || 
+                           query.includes('villa') || query.includes('apartment') ||
+                           query.includes('find') || query.includes('show') ||
+                           query.includes('best') || query.includes('recommend');
+
+    if (isPropertySearch) {
+      const matchedProperties = getPropertyRecommendations(userMessage);
+      
+      if (matchedProperties.length > 0) {
+        setAiThinking(false);
+        let response = `Here are the best properties I found based on your criteria:\n\n`;
+        
+        matchedProperties.forEach((property, index) => {
+          response += `${index + 1}. **${property.title}**\n`;
+          response += `   📍 ${property.location}\n`;
+          response += `   💰 $${property.price?.toLocaleString() || 'N/A'}\n`;
+          response += `   🛏️ ${property.bedrooms} bedrooms, ${property.bathrooms} bathrooms\n`;
+          response += `   📐 ${property.sqft} sq ft\n\n`;
+        });
+
+        response += `These properties match your requirements perfectly! You can view more details by clicking on any property card in our recommendations section.`;
+        
+        return response;
+      }
+    }
+
     const personalityPrompts = {
-      professional: "You are a professional real estate AI assistant. Provide detailed, accurate, and helpful information in a business-like tone.",
-      friendly: "You are a friendly and enthusiastic real estate AI assistant. Be warm, encouraging, and use emojis appropriately. Make the conversation feel personal and exciting.",
-      expert: "You are an expert-level real estate AI with deep analytical capabilities. Provide sophisticated insights, use technical terminology when appropriate, and focus on data-driven recommendations."
+      professional: `You are a professional real estate AI assistant for Wealth Home in Bahrain. Provide direct, helpful answers without asking too many follow-up questions. Focus on giving actionable information and specific recommendations.`,
+      friendly: `You are a friendly real estate AI assistant for Wealth Home in Bahrain. Be warm and helpful, providing direct answers with enthusiasm. Avoid asking too many questions - instead, give useful information and suggestions.`,
+      expert: `You are an expert real estate AI analyst for Wealth Home in Bahrain. Provide sophisticated, data-driven insights and direct recommendations. Focus on delivering valuable information rather than asking multiple questions.`
     };
 
     try {
@@ -264,27 +352,27 @@ Initiating consultation protocol. How may I assist with your property objectives
           messages: [
             {
               role: 'system',
-              content: `${personalityPrompts[aiPersonality]} You are working for Wealth Home, a premium property platform in Bahrain. 
+              content: `${personalityPrompts[aiPersonality]}
+
+IMPORTANT GUIDELINES:
+- Provide direct, helpful answers
+- Avoid asking multiple follow-up questions
+- Give specific recommendations when possible
+- Focus on actionable information
+- Keep responses concise but informative
+- Only ask ONE clarifying question if absolutely necessary
+- Prioritize giving useful information over gathering more details
 
 Available properties context: ${context}
 
-Guidelines:
-- Match the ${aiPersonality} personality in your responses
-- Provide specific, actionable advice about Bahrain real estate
-- Ask clarifying questions when needed
-- Suggest properties based on user preferences
-- Include market insights when relevant
-- Keep responses engaging and informative
-- Always end with a helpful question or suggestion
-- Use appropriate emojis for friendly personality
-- Be technical and analytical for expert personality`
+You work for Wealth Home, a premium property platform in Bahrain. Help users find properties, provide market insights, and give real estate advice based on the available data.`
             },
             {
               role: 'user',
               content: userMessage
             }
           ],
-          max_tokens: 600,
+          max_tokens: 400,
           temperature: aiPersonality === 'expert' ? 0.3 : 0.7
         })
       });
@@ -299,7 +387,7 @@ Guidelines:
     } catch (error) {
       console.error('OpenAI API Error:', error);
       setAiThinking(false);
-      return "I apologize, but I'm experiencing some technical difficulties. However, I can still help you explore our amazing property collection! Would you like me to show you some featured properties or market insights?";
+      return "I apologize, but I'm experiencing some technical difficulties. However, I can still help you explore our amazing property collection! Let me show you some featured properties that might interest you.";
     }
   };
 
@@ -319,10 +407,10 @@ Guidelines:
     setIsTyping(true);
 
     // Simulate typing delay
-    setTimeout(() => setIsTyping(false), 2000);
+    setTimeout(() => setIsTyping(false), 1500);
 
     const propertiesContext = allProperties.slice(0, 10).map(p => 
-      `${p.title} in ${p.location} - ${p.bedrooms}BR/${p.bathrooms}BA - $${p.price?.toLocaleString() || 'N/A'}`
+      `${p.title} in ${p.location} - ${p.bedrooms}BR/${p.bathrooms}BA - $${p.price?.toLocaleString() || 'N/A'} - Type: ${p.type || 'N/A'}`
     ).join('; ');
 
     try {
@@ -361,28 +449,28 @@ Guidelines:
     { 
       category: "Property Search", 
       questions: [
-        "Find me luxury waterfront properties",
-        "Show 3-bedroom family homes under $300k",
-        "What are the best investment areas?",
-        "Properties with swimming pools in Manama"
+        "Show me luxury waterfront properties in Manama",
+        "Find 3-bedroom family homes under $300k",
+        "Best investment properties in Riffa",
+        "Properties with swimming pools and gardens"
       ]
     },
     { 
       category: "Market Analysis", 
       questions: [
-        "Current market trends in Bahrain",
-        "Price predictions for next quarter",
-        "Best time to buy property",
+        "What are current market trends in Bahrain?",
+        "Best areas for property investment",
+        "Average property prices by location",
         "ROI analysis for rental properties"
       ]
     },
     { 
       category: "Neighborhood Insights", 
       questions: [
-        "Compare Riffa vs Manama living",
-        "Family-friendly areas with good schools",
+        "Compare Riffa vs Manama for families",
+        "Best areas near international schools",
         "Upcoming development projects",
-        "Transportation and connectivity"
+        "Transportation and connectivity options"
       ]
     }
   ];
@@ -767,10 +855,10 @@ Guidelines:
                   Pro Tips
                 </h3>
                 <ul className="space-y-2 text-sm text-white/80">
-                  <li>• Be specific about your budget and preferences</li>
-                  <li>• Ask about neighborhood amenities and schools</li>
-                  <li>• Inquire about future development plans</li>
-                  <li>• Request investment potential analysis</li>
+                  <li>• Be specific about your budget and location</li>
+                  <li>• Mention desired amenities (pool, beach, etc.)</li>
+                  <li>• Ask about specific neighborhoods</li>
+                  <li>• Request investment analysis for ROI insights</li>
                 </ul>
               </div>
             </div>
