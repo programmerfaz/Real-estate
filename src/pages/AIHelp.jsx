@@ -1,729 +1,648 @@
-import React, { useEffect, useState } from 'react';
-import PropertyCard from '../components/PropertyCard';
-import SearchBar from '../components/SearchBar';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  MessageCircle, 
+  Send, 
+  Bot, 
+  User, 
+  Home as HomeIcon, 
+  TrendingUp, 
+  MapPin, 
+  DollarSign, 
+  Bed, 
+  Bath, 
+  Square, 
+  Star, 
+  Lightbulb, 
+  BarChart3, 
+  Target, 
+  Sparkles, 
+  LogOut, 
+  Menu, 
+  X,
+  Loader2,
+  ThumbsUp,
+  ThumbsDown,
+  Copy,
+  RefreshCw
+} from 'lucide-react';
 import { Link } from "react-router-dom";
 import { supabase } from "../supabase";
-
 import { auth } from "../firebase";
-import {
-    Search,
-    MapPin,
-    Bed,
-    Bath,
-    Square,
-    Car,
-    Heart,
-    Filter,
-    Grid3X3,
-    Map,
-    Star,
-    ChevronDown,
-    X,
-    ArrowLeft,
-    Phone,
-    Mail,
-    Calendar,
-    Home,
-    Wifi,
-    Dumbbell,
-    Trees,
-    Shield,
-    Zap,
-    Camera,
-    Users,
-    Home as HomeIcon
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import PropertyCard from '../components/PropertyCard';
 
-const allProperties = [
-    {
-        id: 1,
-        title: "Luxury Waterfront Villa",
-        price: 450000,
-        location: "Amwaj Islands, Bahrain",
-        bedrooms: 5,
-        bathrooms: 4,
-        sqft: 4200,
-        parking: 3,
-        image: "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800",
-        images: [
-            "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800",
-            "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800",
-            "https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800"
-        ],
-        rating: 4.9,
-        featured: true,
-        type: "Villa",
-        yearBuilt: 2020,
-        furnished: "Fully Furnished",
-        petFriendly: true,
-        description: "Stunning waterfront villa with panoramic sea views, private beach access, and resort-style amenities. This luxury property features an open-plan design with premium finishes throughout.",
-        amenities: ["Private Beach", "Swimming Pool", "Gym", "Garden", "Garage", "Security", "Smart Home", "WiFi"],
-        agent: {
-            name: "Ahmed Al-Mahmood",
-            phone: "+973 3333 4444",
-            email: "ahmed@bahrainrealty.com"
-        },
-        coordinates: { lat: 26.2540, lng: 50.6660 }, // Amwaj Islands
-        address: "Villa 123, Amwaj Islands, Muharraq Governorate, Bahrain"
-    },
-    {
-        id: 2,
-        title: "Modern Family Compound",
-        price: 280000,
-        location: "Riffa, Bahrain",
-        bedrooms: 4,
-        bathrooms: 3,
-        sqft: 3200,
-        parking: 2,
-        image: "https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800",
-        images: [
-            "https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800",
-            "https://images.pexels.com/photos/1438832/pexels-photo-1438832.jpeg?auto=compress&cs=tinysrgb&w=800",
-            "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=800"
-        ],
-        rating: 4.7,
-        featured: false,
-        type: "Compound",
-        yearBuilt: 2019,
-        furnished: "Semi Furnished",
-        petFriendly: true,
-        description: "Spacious family compound in prestigious Riffa area with private garden, modern amenities, and excellent connectivity to schools and shopping centers.",
-        amenities: ["Garden", "Parking", "Security", "Central AC", "Maid's Room", "Storage"],
-        agent: {
-            name: "Fatima Al-Zahra",
-            phone: "+973 3555 6666",
-            email: "fatima@gulfproperties.bh"
-        },
-        coordinates: { lat: 26.1300, lng: 50.5550 }, // Riffa
-        address: "Block 123, Road 456, Riffa, Southern Governorate, Bahrain"
-    },
-    {
-        id: 3,
-        title: "Seef District Apartment",
-        price: 180000,
-        location: "Seef, Manama",
-        bedrooms: 3,
-        bathrooms: 2,
-        sqft: 1800,
-        parking: 1,
-        image: "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800",
-        images: [
-            "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800",
-            "https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800",
-            "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800"
-        ],
-        rating: 4.5,
-        featured: true,
-        type: "Apartment",
-        yearBuilt: 2021,
-        furnished: "Unfurnished",
-        petFriendly: false,
-        description: "Modern apartment in the heart of Seef district with stunning city views, close to malls, restaurants, and business centers. Perfect for professionals and small families.",
-        amenities: ["Gym", "Swimming Pool", "Security", "Elevator", "Parking", "Central AC"],
-        agent: {
-            name: "Mohammed Al-Khalifa",
-            phone: "+973 3777 8888",
-            email: "mohammed@seefrealty.com"
-        },
-        coordinates: { lat: 26.2285, lng: 50.5440 }, // Seef
-        address: "Tower 1, Building 789, Seef District, Capital Governorate, Bahrain"
-    },
-    {
-        id: 4,
-        title: "Juffair Executive Suite",
-        price: 220000,
-        location: "Juffair, Manama",
-        bedrooms: 2,
-        bathrooms: 2,
-        sqft: 1400,
-        parking: 1,
-        image: "https://images.pexels.com/photos/1438832/pexels-photo-1438832.jpeg?auto=compress&cs=tinysrgb&w=800",
-        images: [
-            "https://images.pexels.com/photos/1438832/pexels-photo-1438832.jpeg?auto=compress&cs=tinysrgb&w=800",
-            "https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800",
-            "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=800"
-        ],
-        rating: 4.6,
-        featured: false,
-        type: "Apartment",
-        yearBuilt: 2022,
-        furnished: "Fully Furnished",
-        petFriendly: false,
-        description: "Executive suite in premium Juffair location with modern amenities, close to diplomatic area and international hotels. Ideal for executives and expatriates.",
-        amenities: ["Concierge", "Gym", "Pool", "Security", "WiFi", "Parking"],
-        agent: {
-            name: "Sarah Al-Mannai",
-            phone: "+973 3999 0000",
-            email: "sarah@juffairproperties.bh"
-        },
-        coordinates: { lat: 26.2172, lng: 50.5890 }, // Juffair
-        address: "Building 456, Road 789, Juffair, Capital Governorate, Bahrain"
-    },
-    {
-        id: 5,
-        title: "Budaiya Beachfront Villa",
-        price: 520000,
-        location: "Budaiya, Bahrain",
-        bedrooms: 6,
-        bathrooms: 5,
-        sqft: 5000,
-        parking: 4,
-        image: "https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800",
-        images: [
-            "https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800",
-            "https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800",
-            "https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800"
-        ],
-        rating: 5.0,
-        featured: true,
-        type: "Villa",
-        yearBuilt: 2018,
-        furnished: "Semi Furnished",
-        petFriendly: true,
-        description: "Magnificent beachfront villa with private beach access, landscaped gardens, and luxury amenities. Perfect for large families seeking privacy and luxury by the sea.",
-        amenities: ["Private Beach", "Garden", "Pool", "Gym", "Garage", "Security", "Maid's Room", "Driver's Room"],
-        agent: {
-            name: "Ali Al-Doseri",
-            phone: "+973 3111 2222",
-            email: "ali@budaiyavillas.com"
-        },
-        coordinates: { lat: 26.1500, lng: 50.4500 }, // Budaiya
-        address: "Villa 789, Budaiya Highway, Northern Governorate, Bahrain"
-    },
-    {
-        id: 6,
-        title: "Saar Family Home",
-        price: 320000,
-        location: "Saar, Bahrain",
-        bedrooms: 4,
-        bathrooms: 3,
-        sqft: 2800,
-        parking: 2,
-        image: "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=800",
-        images: [
-            "https://images.pexels.com/photos/1029599/pexels-photo-1029599.jpeg?auto=compress&cs=tinysrgb&w=800",
-            "https://images.pexels.com/photos/1438832/pexels-photo-1438832.jpeg?auto=compress&cs=tinysrgb&w=800",
-            "https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800"
-        ],
-        rating: 4.4,
-        featured: false,
-        type: "Villa",
-        yearBuilt: 2017,
-        furnished: "Unfurnished",
-        petFriendly: true,
-        description: "Comfortable family home in quiet Saar neighborhood with garden, close to international schools and shopping centers. Great for families with children.",
-        amenities: ["Garden", "Parking", "Central AC", "Storage", "Maid's Room"],
-        agent: {
-            name: "Noor Al-Baharna",
-            phone: "+973 3444 5555",
-            email: "noor@saarhomes.bh"
-        },
-        coordinates: { lat: 26.1833, lng: 50.4833 }, // Saar
-        address: "House 321, Block 654, Saar, Northern Governorate, Bahrain"
-    }
-];
+const AIHelp = () => {
+  const [userEmail, setUserEmail] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [allProperties, setAllProperties] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [userPreferences, setUserPreferences] = useState({
+    budget: '',
+    location: '',
+    bedrooms: '',
+    propertyType: '',
+    lifestyle: ''
+  });
+  const [marketInsights, setMarketInsights] = useState(null);
+  const [activeTab, setActiveTab] = useState('chat');
+  const messagesEndRef = useRef(null);
+  const navigate = useNavigate();
 
+  // OpenAI API configuration
+  const OPENAI_API_KEY = process.env.REACT_APP_OPENAI_API_KEY || 'your-openai-api-key-here';
 
-const Buy = () => {
-    const [viewMode, setViewMode] = useState('grid');
-    const [showFilters, setShowFilters] = useState(false);
-    const [selectedProperty, setSelectedProperty] = useState(null);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [visibleProperties, setVisibleProperties] = useState(25);
-    const [filters, setFilters] = useState({
-        location: '',
-        priceMin: '',
-        priceMax: '',
-        bedrooms: '',
-        propertyType: '',
-        featured: false
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setUserEmail(user.email);
+      } else {
+        setUserEmail(null);
+      }
     });
-    const [favorites, setFavorites] = useState(new Set());
+    return () => unsubscribe();
+  }, []);
 
-    const properties = allProperties.slice(0, visibleProperties);
-
-    const propertiesToShow = allProperties.slice(0, visibleProperties);
-
-    const loadMoreProperties = () => {
-        setVisibleProperties(prev => Math.min(prev + 5, allProperties.length));
+  useEffect(() => {
+    const fetchProperties = async () => {
+      const { data, error } = await supabase.from("properties").select("*");
+      if (error) {
+        console.error("Error fetching properties:", error.message);
+      } else {
+        setAllProperties(data);
+        generateInitialRecommendations(data);
+      }
     };
+    fetchProperties();
+  }, []);
 
-    const toggleFavorite = (id) => {
-        const newFavorites = new Set(favorites);
-        if (newFavorites.has(id)) {
-            newFavorites.delete(id);
-        } else {
-            newFavorites.add(id);
-        }
-        setFavorites(newFavorites);
-    };
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
-    const formatPrice = (price) => {
-        return new Intl.NumberFormat('en-BH', {
-            style: 'currency',
-            currency: 'BHD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(price);
-    };
+  useEffect(() => {
+    // Add welcome message when component mounts
+    if (messages.length === 0) {
+      setMessages([{
+        id: 1,
+        type: 'bot',
+        content: `Hello! I'm your AI property assistant. I can help you find the perfect property in Bahrain based on your preferences, budget, and lifestyle. 
 
-    const PropertyCard = ({ property }) => (
-        <div
-            className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
-            onClick={() => setSelectedProperty(property)}
-        >
-            <div className="relative">
-                <img
-                    src={property.image}
-                    alt={property.title}
-                    className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute top-4 left-4 flex gap-2">
-                    {property.featured && (
-                        <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                            Featured
-                        </span>
-                    )}
-                    <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                        For Sale
-                    </span>
-                </div>
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(property.id);
-                    }}
-                    className="absolute top-4 right-4 p-2 rounded-full bg-white/90 hover:bg-white transition-colors duration-200"
-                >
-                    <Heart
-                        className={`w-5 h-5 ${favorites.has(property.id) ? 'fill-red-500 text-red-500' : 'text-gray-600'}`}
-                    />
-                </button>
-                <div className="absolute bottom-4 right-4 bg-black/70 text-white px-2 py-1 rounded text-sm">
-                    View Details
-                </div>
-            </div>
+What would you like to know about? I can help with:
+• Property recommendations
+• Market analysis
+• Neighborhood insights
+• Investment advice
+• Mortgage calculations
 
-            <div className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold text-xl text-gray-900">{property.title}</h3>
-                    <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm text-gray-600">{property.rating}</span>
-                    </div>
-                </div>
-
-                <div className="flex items-center text-gray-600 mb-3">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    <span className="text-sm">{property.location}</span>
-                </div>
-
-                <div className="text-3xl font-bold text-blue-600 mb-4">
-                    {formatPrice(property.price)}
-                </div>
-
-                <div className="grid grid-cols-4 gap-4 pt-4 border-t border-gray-100">
-                    <div className="flex items-center justify-center text-gray-600">
-                        <Bed className="w-4 h-4 mr-1" />
-                        <span className="text-sm font-medium">{property.bedrooms}</span>
-                    </div>
-                    <div className="flex items-center justify-center text-gray-600">
-                        <Bath className="w-4 h-4 mr-1" />
-                        <span className="text-sm font-medium">{property.bathrooms}</span>
-                    </div>
-                    <div className="flex items-center justify-center text-gray-600">
-                        <Square className="w-4 h-4 mr-1" />
-                        <span className="text-sm font-medium">{property.sqft}</span>
-                    </div>
-                    <div className="flex items-center justify-center text-gray-600">
-                        <Car className="w-4 h-4 mr-1" />
-                        <span className="text-sm font-medium">{property.parking}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
-    const PropertyDetails = ({ property }) => (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto">
-            <div className="min-h-screen py-8 px-4">
-                <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900">{property.title}</h1>
-                            <div className="flex items-center text-gray-600 mt-2">
-                                <MapPin className="w-5 h-5 mr-2" />
-                                <span>{property.address}</span>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setSelectedProperty(null)}
-                            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-6">
-                        {/* Left Column - Images and Details */}
-                        <div className="lg:col-span-2 space-y-6">
-                            {/* Image Gallery */}
-                            <div className="relative">
-                                <img
-                                    src={property.images[currentImageIndex]}
-                                    alt={property.title}
-                                    className="w-full h-96 object-cover rounded-2xl"
-                                />
-                                <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-                                    {currentImageIndex + 1} / {property.images.length}
-                                </div>
-                                <button
-                                    onClick={() => setCurrentImageIndex(prev => prev > 0 ? prev - 1 : property.images.length - 1)}
-                                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full transition-colors"
-                                >
-                                    <ArrowLeft className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={() => setCurrentImageIndex(prev => prev < property.images.length - 1 ? prev + 1 : 0)}
-                                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full transition-colors rotate-180"
-                                >
-                                    <ArrowLeft className="w-5 h-5" />
-                                </button>
-                            </div>
-
-                            {/* Thumbnail Gallery */}
-                            <div className="flex gap-4">
-                                {property.images.map((image, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => setCurrentImageIndex(index)}
-                                        className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${currentImageIndex === index ? 'border-blue-600' : 'border-gray-200'
-                                            }`}
-                                    >
-                                        <img src={image} alt="" className="w-full h-full object-cover" />
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Property Details */}
-                            <div className="bg-gray-50 rounded-2xl p-6">
-                                <h3 className="text-xl font-bold mb-4">Property Details</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                    <div className="text-center">
-                                        <Bed className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                                        <div className="text-2xl font-bold text-gray-900">{property.bedrooms}</div>
-                                        <div className="text-sm text-gray-600">Bedrooms</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <Bath className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                                        <div className="text-2xl font-bold text-gray-900">{property.bathrooms}</div>
-                                        <div className="text-sm text-gray-600">Bathrooms</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <Square className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                                        <div className="text-2xl font-bold text-gray-900">{property.sqft}</div>
-                                        <div className="text-sm text-gray-600">Square Feet</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <Car className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                                        <div className="text-2xl font-bold text-gray-900">{property.parking}</div>
-                                        <div className="text-sm text-gray-600">Parking Spaces</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Description */}
-                            <div>
-                                <h3 className="text-xl font-bold mb-4">Description</h3>
-                                <p className="text-gray-700 leading-relaxed">{property.description}</p>
-                            </div>
-
-                            {/* Features & Amenities */}
-                            <div>
-                                <h3 className="text-xl font-bold mb-4">Features & Amenities</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    {property.amenities.map((amenity, index) => (
-                                        <div key={index} className="flex items-center text-gray-700">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                                            <span>{amenity}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Additional Info */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 bg-gray-50 rounded-2xl p-6">
-                                <div>
-                                    <div className="text-sm text-gray-600">Year Built</div>
-                                    <div className="font-semibold">{property.yearBuilt}</div>
-                                </div>
-                                <div>
-                                    <div className="text-sm text-gray-600">Furnished</div>
-                                    <div className="font-semibold">{property.furnished}</div>
-                                </div>
-                                <div>
-                                    <div className="text-sm text-gray-600">Pet Friendly</div>
-                                    <div className="font-semibold">{property.petFriendly ? 'Yes' : 'No'}</div>
-                                </div>
-                                <div>
-                                    <div className="text-sm text-gray-600">Property Type</div>
-                                    <div className="font-semibold">{property.type}</div>
-                                </div>
-                            </div>
-
-                            {/* Google Map */}
-                            <div>
-                                <h3 className="text-xl font-bold mb-4">Location</h3>
-                                <div className="bg-gray-200 rounded-2xl h-64 flex items-center justify-center">
-                                    <iframe
-                                        src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3580.0!2d${property.coordinates.lng}!3d${property.coordinates.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjbCsDE1JzEyLjAiTiA1MMKwMzInNDguMCJF!5e0!3m2!1sen!2sbh!4v1635000000000!5m2!1sen!2sbh`}
-                                        width="100%"
-                                        height="100%"
-                                        style={{ border: 0, borderRadius: '1rem' }}
-                                        allowFullScreen=""
-                                        loading="lazy"
-                                        referrerPolicy="no-referrer-when-downgrade"
-                                        title={`Map of ${property.title}`}
-                                    ></iframe>
-                                </div>
-                                <div className="mt-4 p-4 bg-blue-50 rounded-xl">
-                                    <div className="flex items-center text-blue-800">
-                                        <MapPin className="w-5 h-5 mr-2" />
-                                        <span className="font-medium">{property.address}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right Column - Price and Contact */}
-                        <div className="space-y-6">
-                            {/* Price Card */}
-                            <div className="bg-blue-50 rounded-2xl p-6 sticky top-6">
-                                <div className="text-4xl font-bold text-blue-600 mb-2">
-                                    {formatPrice(property.price)}
-                                </div>
-                                <div className="flex items-center mb-4">
-                                    <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold mr-2">
-                                        For Sale
-                                    </span>
-                                    <div className="flex items-center">
-                                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />
-                                        <span className="text-sm text-gray-600">{property.rating}</span>
-                                    </div>
-                                </div>
-
-                                {/* Contact Agent */}
-                                <div className="border-t border-blue-200 pt-6">
-                                    <h4 className="font-bold text-gray-900 mb-4">Contact Agent</h4>
-                                    <div className="space-y-3 mb-6">
-                                        <div className="font-semibold text-lg">{property.agent.name}</div>
-                                        <div className="flex items-center text-gray-600">
-                                            <Phone className="w-4 h-4 mr-2" />
-                                            <span>{property.agent.phone}</span>
-                                        </div>
-                                        <div className="flex items-center text-gray-600">
-                                            <Mail className="w-4 h-4 mr-2" />
-                                            <span>{property.agent.email}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center">
-                                            <Phone className="w-5 h-5 mr-2" />
-                                            Call Now
-                                        </button>
-                                        <button className="w-full border border-blue-600 text-blue-600 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center">
-                                            <Mail className="w-5 h-5 mr-2" />
-                                            Send Email
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
-    const [userEmail, setUserEmail] = useState(null);
-
-    // Mock auth state for demonstration
-    useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged((user) => {
-            if (user) {
-                setUserEmail(user.email);
-            } else {
-                setUserEmail(null);
-            }
-        });
-        return () => unsubscribe();
-    }, []);
-
-    const PropertiesGrid = ({ viewMode }) => {
-        const [allProperties, setAllProperties] = useState([]);
-        const [visibleProperties, setVisibleProperties] = useState(25);
-
-        useEffect(() => {
-            const fetchProperties = async () => {
-                const { data, error } = await supabase.from("properties").select("*");
-                if (error) {
-                    console.error("Error fetching properties:", error.message);
-                } else {
-                    setAllProperties(data);
-                    console.log("Fetched properties:", data);
-                }
-            };
-
-            fetchProperties();
-        }, []);
-
+How can I assist you today?`,
+        timestamp: new Date()
+      }]);
     }
-    return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="bg-white shadow-sm border-b border-gray-100">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-4">
-                        <div className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                                <HomeIcon className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-xl font-bold text-gray-900">Wealth Home</span>
-                        </div>
+  }, []);
 
-                        <nav className="hidden md:flex items-center gap-8">
-                            <a href="./Home" className="text-gray-600 hover:text-blue-600 font-medium">Properties</a>
-                            <a href="./Buy" className="text-gray-600 hover:text-blue-600 font-medium">Buy</a>
-                            <a href="./Rent" className="text-gray-600 hover:text-blue-600 font-medium">Rent</a>
-                            <a href="./AIHelp" className="text-gray-600 hover:text-blue-600 font-medium">AI Help</a>
-                            <a href="./About" className="text-gray-600 hover:text-blue-600 font-medium">About</a>
-                        </nav>
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-                        <div className="flex items-center gap-4">
-                            {userEmail ? (
-                                <span className="text-sm text-gray-600">Welcome, {userEmail.split('@')[0]}</span>
-                            ) : (
-                                <button className="text-gray-600 hover:text-blue-600 font-medium">Sign In</button>
-                            )}
-                            <Link to="/Favourites">
-                                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                    My Favourites
-                                </button>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </header>
+  const handleLogout = () => {
+    localStorage.removeItem('userEmail');
+    navigate('/login');
+  };
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="flex gap-8">
-                    {/* Filters Sidebar */}
+  const generateInitialRecommendations = (properties) => {
+    // Generate smart recommendations based on popular properties
+    const featured = properties.filter(p => p.featured).slice(0, 3);
+    const highRated = properties.sort((a, b) => b.rating - a.rating).slice(0, 3);
+    const affordable = properties.sort((a, b) => a.price - b.price).slice(0, 3);
+    
+    setRecommendations([
+      { title: 'Featured Properties', properties: featured, icon: Star },
+      { title: 'Highly Rated', properties: highRated, icon: ThumbsUp },
+      { title: 'Best Value', properties: affordable, icon: DollarSign }
+    ]);
+  };
 
+  const generateMarketInsights = (properties) => {
+    const avgPrice = properties.reduce((sum, p) => sum + p.price, 0) / properties.length;
+    const locations = [...new Set(properties.map(p => p.location))];
+    const priceByLocation = locations.map(loc => {
+      const locationProps = properties.filter(p => p.location.includes(loc));
+      return {
+        location: loc,
+        avgPrice: locationProps.reduce((sum, p) => sum + p.price, 0) / locationProps.length,
+        count: locationProps.length
+      };
+    });
 
-                    {/* Main Content */}
-                    <div className="flex-1">
-                        {/* Search Bar & Controls */}
-                        <div className="mb-8">
-                            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
-                                <div className="relative flex-1 max-w-2xl">
-                                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search properties in Bahrain..."
-                                        className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                                    />
-                                </div>
+    setMarketInsights({
+      avgPrice,
+      totalProperties: properties.length,
+      priceByLocation: priceByLocation.sort((a, b) => b.avgPrice - a.avgPrice),
+      trends: {
+        growth: '+12%',
+        hottest: priceByLocation[0]?.location || 'Manama'
+      }
+    });
+  };
 
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={() => setShowFilters(!showFilters)}
-                                        className="lg:hidden flex items-center px-4 py-3 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
-                                    >
-                                        <Filter className="w-5 h-5 mr-2" />
-                                        Filters
-                                    </button>
+  const callOpenAI = async (userMessage, context = '') => {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a helpful AI real estate assistant for Wealth Home, a premium property platform in Bahrain. You help users find properties, provide market insights, and give real estate advice. 
 
-                                    <div className="flex bg-gray-100 rounded-xl p-1">
-                                        <button
-                                            onClick={() => setViewMode('grid')}
-                                            className={`flex items-center px-4 py-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
-                                                }`}
-                                        >
-                                            <Grid3X3 className="w-5 h-5 mr-2" />
-                                            Grid
-                                        </button>
-                                        <button
-                                            onClick={() => setViewMode('map')}
-                                            className={`flex items-center px-4 py-2 rounded-lg transition-colors ${viewMode === 'map' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
-                                                }`}
-                                        >
-                                            <Map className="w-5 h-5 mr-2" />
-                                            Map
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+Available properties context: ${context}
 
-                            <div className="flex items-center justify-between text-sm text-gray-600">
-                                <span>Showing {properties.length} of {allProperties.length} properties</span>
-                                <select className="px-3 py-2 border border-gray-200 rounded-lg">
-                                    <option>Sort by: Newest</option>
-                                    <option>Price: Low to High</option>
-                                    <option>Price: High to Low</option>
-                                    <option>Bedrooms</option>
-                                </select>
-                            </div>
-                        </div>
+Guidelines:
+- Be friendly, professional, and knowledgeable about Bahrain real estate
+- Provide specific, actionable advice
+- Ask clarifying questions when needed
+- Suggest properties based on user preferences
+- Include market insights when relevant
+- Keep responses concise but informative
+- Always end with a helpful question or suggestion`
+            },
+            {
+              role: 'user',
+              content: userMessage
+            }
+          ],
+          max_tokens: 500,
+          temperature: 0.7
+        })
+      });
 
-                        {/* Properties Grid or Map View */}
-                        {/* {viewMode === "grid" ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                                {propertiesToShow.map((property) => (
-                                    <PropertyCard key={property.id} property={property} />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="bg-white rounded-2xl shadow-lg h-96 flex items-center justify-center">
-                                <div className="text-center">
-                                    <Map className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                                    <p className="text-gray-500">Map view showing Bahrain properties</p>
-                                </div>
-                            </div>
-                        )} */}
+      if (!response.ok) {
+        throw new Error('OpenAI API request failed');
+      }
 
-                        {/* Load More */}
-                        {visibleProperties < allProperties.length && (
-                            <div className="text-center mt-12">
-                                <button
-                                    onClick={loadMoreProperties}
-                                    className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-semibold hover:bg-blue-700 transition-colors"
-                                >
-                                    Load More Properties ({allProperties.length - visibleProperties} remaining)
-                                </button>
-                            </div>
-                        )}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {allProperties.slice(0, visibleProperties).map((property) => (
-                                <PropertyCard
-                                    key={property.id}
-                                    property={property}
-                                    formatPrice={formatPrice}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                </div>
+      const data = await response.json();
+      return data.choices[0].message.content;
+    } catch (error) {
+      console.error('OpenAI API Error:', error);
+      return "I apologize, but I'm having trouble connecting to my AI services right now. However, I can still help you browse our properties and provide general assistance. Would you like me to show you some recommended properties based on popular choices?";
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return;
+
+    const userMessage = {
+      id: Date.now(),
+      type: 'user',
+      content: inputMessage,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
+
+    // Create context from properties for AI
+    const propertiesContext = allProperties.slice(0, 10).map(p => 
+      `${p.title} in ${p.location} - ${p.bedrooms}BR/${p.bathrooms}BA - $${p.price.toLocaleString()}`
+    ).join('; ');
+
+    try {
+      const aiResponse = await callOpenAI(inputMessage, propertiesContext);
+      
+      const botMessage = {
+        id: Date.now() + 1,
+        type: 'bot',
+        content: aiResponse,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      const errorMessage = {
+        id: Date.now() + 1,
+        type: 'bot',
+        content: "I apologize for the technical difficulty. Let me help you in other ways! Would you like to see our featured properties or get market insights?",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    }
+
+    setIsLoading(false);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const quickQuestions = [
+    "What's the best area to buy in Bahrain?",
+    "Show me properties under $200k",
+    "I need a 3-bedroom family home",
+    "What are the current market trends?",
+    "Help me calculate mortgage payments",
+    "Best investment properties in Manama"
+  ];
+
+  const handleQuickQuestion = (question) => {
+    setInputMessage(question);
+    setTimeout(() => handleSendMessage(), 100);
+  };
+
+  const formatPrice = (price) => `$${price.toLocaleString()}`;
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <HomeIcon className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl font-bold text-gray-900">Wealth Home</span>
             </div>
 
-            {/* Property Details Modal */}
-            {selectedProperty && (
-                <PropertyDetails property={selectedProperty} />
-            )}
+            <nav className="hidden md:flex items-center gap-8">
+              <a href="./Home" className="text-gray-600 hover:text-blue-600 font-medium">Properties</a>
+              <a href="./Buy" className="text-gray-600 hover:text-blue-600 font-medium">Buy</a>
+              <a href="./Rent" className="text-gray-600 hover:text-blue-600 font-medium">Rent</a>
+              <a href="./AIHelp" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">AI Help</a>
+              <a href="./About" className="text-gray-600 hover:text-blue-600 font-medium">About</a>
+            </nav>
+
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden text-gray-700 focus:outline-none"
+            >
+              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+
+            <div className="hidden md:flex items-center gap-4">
+              <Link to="/Favourites">
+                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                  My Favourites
+                </button>
+              </Link>
+              {userEmail ? (
+                <>
+                  <span className="text-sm text-gray-600">Welcome, {userEmail.split('@')[0]}</span>
+                  <LogOut
+                    onClick={handleLogout}
+                    className="w-5 h-5 text-red-600 hover:text-red-800 cursor-pointer"
+                  />
+                </>
+              ) : (
+                <button className="text-gray-600 hover:text-blue-600 font-medium">Sign In</button>
+              )}
+            </div>
+          </div>
+
+          {menuOpen && (
+            <div className="md:hidden bg-white border-t border-gray-200 pt-4 pb-4 space-y-2">
+              <a href="./Home" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Properties</a>
+              <a href="./Buy" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Buy</a>
+              <a href="./Rent" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Rent</a>
+              <a href="./AIHelp" className="block px-4 text-blue-600 font-medium">AI Help</a>
+              <a href="./About" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">About</a>
+            </div>
+          )}
         </div>
-    );
-}
+      </header>
 
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mr-4">
+              <Sparkles className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-white">
+              AI Property Assistant
+            </h1>
+          </div>
+          <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
+            Get personalized property recommendations, market insights, and expert advice 
+            powered by artificial intelligence
+          </p>
+        </div>
+      </section>
 
-export default Buy;
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Tab Navigation */}
+        <div className="flex flex-wrap gap-2 mb-8 bg-white rounded-xl p-2 shadow-sm">
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+              activeTab === 'chat' 
+                ? 'bg-blue-600 text-white shadow-md' 
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <MessageCircle className="w-5 h-5 mr-2" />
+            AI Chat
+          </button>
+          <button
+            onClick={() => setActiveTab('recommendations')}
+            className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+              activeTab === 'recommendations' 
+                ? 'bg-blue-600 text-white shadow-md' 
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Target className="w-5 h-5 mr-2" />
+            Smart Recommendations
+          </button>
+          <button
+            onClick={() => setActiveTab('insights')}
+            className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+              activeTab === 'insights' 
+                ? 'bg-blue-600 text-white shadow-md' 
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <BarChart3 className="w-5 h-5 mr-2" />
+            Market Insights
+          </button>
+        </div>
+
+        {/* Chat Tab */}
+        {activeTab === 'chat' && (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Chat Interface */}
+            <div className="lg:col-span-3">
+              <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                {/* Chat Header */}
+                <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mr-4">
+                      <Bot className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-white">AI Property Assistant</h3>
+                      <p className="text-blue-100">Online • Ready to help</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Messages */}
+                <div className="h-96 overflow-y-auto p-6 space-y-4">
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className={`flex items-start max-w-xs lg:max-w-md ${
+                        message.type === 'user' ? 'flex-row-reverse' : 'flex-row'
+                      }`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          message.type === 'user' 
+                            ? 'bg-blue-600 ml-3' 
+                            : 'bg-gray-200 mr-3'
+                        }`}>
+                          {message.type === 'user' ? (
+                            <User className="w-4 h-4 text-white" />
+                          ) : (
+                            <Bot className="w-4 h-4 text-gray-600" />
+                          )}
+                        </div>
+                        <div className={`px-4 py-3 rounded-2xl ${
+                          message.type === 'user'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          <p className="whitespace-pre-wrap">{message.content}</p>
+                          <p className={`text-xs mt-2 ${
+                            message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
+                          }`}>
+                            {message.timestamp.toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="flex items-start">
+                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                          <Bot className="w-4 h-4 text-gray-600" />
+                        </div>
+                        <div className="bg-gray-100 px-4 py-3 rounded-2xl">
+                          <div className="flex items-center space-x-2">
+                            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                            <span className="text-gray-600">AI is thinking...</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input */}
+                <div className="border-t border-gray-200 p-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-1 relative">
+                      <textarea
+                        value={inputMessage}
+                        onChange={(e) => setInputMessage(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Ask me anything about properties in Bahrain..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        rows="2"
+                      />
+                    </div>
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!inputMessage.trim() || isLoading}
+                      className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Send className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Questions Sidebar */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl shadow-lg p-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  <Lightbulb className="w-5 h-5 mr-2 text-yellow-500" />
+                  Quick Questions
+                </h3>
+                <div className="space-y-2">
+                  {quickQuestions.map((question, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleQuickQuestion(question)}
+                      className="w-full text-left p-3 text-sm bg-gray-50 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors"
+                    >
+                      {question}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+                <h3 className="text-lg font-semibold mb-3 text-blue-900">💡 Pro Tip</h3>
+                <p className="text-sm text-blue-800">
+                  Be specific about your needs! Mention your budget, preferred location, 
+                  number of bedrooms, and lifestyle preferences for better recommendations.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Recommendations Tab */}
+        {activeTab === 'recommendations' && (
+          <div className="space-y-8">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Smart Property Recommendations</h2>
+              <p className="text-xl text-gray-600">AI-curated properties based on market trends and user preferences</p>
+            </div>
+
+            {recommendations.map((category, index) => (
+              <div key={index} className="bg-white rounded-2xl shadow-lg p-8">
+                <div className="flex items-center mb-6">
+                  <category.icon className="w-8 h-8 text-blue-600 mr-3" />
+                  <h3 className="text-2xl font-bold text-gray-900">{category.title}</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {category.properties.map((property) => (
+                    <PropertyCard
+                      key={property.id}
+                      {...property}
+                      formatPrice={formatPrice}
+                      showViewButton={true}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Market Insights Tab */}
+        {activeTab === 'insights' && (
+          <div className="space-y-8">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Market Insights & Analytics</h2>
+              <p className="text-xl text-gray-600">Real-time market data and trends powered by AI analysis</p>
+            </div>
+
+            {/* Market Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <HomeIcon className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">{allProperties.length}</div>
+                <div className="text-gray-600">Total Properties</div>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <DollarSign className="w-6 h-6 text-green-600" />
+                </div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">
+                  ${Math.round(allProperties.reduce((sum, p) => sum + p.price, 0) / allProperties.length / 1000)}K
+                </div>
+                <div className="text-gray-600">Avg. Price</div>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <TrendingUp className="w-6 h-6 text-purple-600" />
+                </div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">+12%</div>
+                <div className="text-gray-600">Market Growth</div>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MapPin className="w-6 h-6 text-orange-600" />
+                </div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">Manama</div>
+                <div className="text-gray-600">Hottest Area</div>
+              </div>
+            </div>
+
+            {/* Price by Location */}
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">Average Prices by Location</h3>
+              <div className="space-y-4">
+                {[...new Set(allProperties.map(p => p.location))].map((location, index) => {
+                  const locationProps = allProperties.filter(p => p.location.includes(location));
+                  const avgPrice = locationProps.reduce((sum, p) => sum + p.price, 0) / locationProps.length;
+                  const maxPrice = Math.max(...allProperties.map(p => p.price));
+                  const percentage = (avgPrice / maxPrice) * 100;
+                  
+                  return (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium text-gray-900">{location}</span>
+                          <span className="text-blue-600 font-semibold">${Math.round(avgPrice / 1000)}K</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* AI Insights */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100">
+              <div className="flex items-center mb-6">
+                <Sparkles className="w-8 h-8 text-blue-600 mr-3" />
+                <h3 className="text-2xl font-bold text-blue-900">AI Market Analysis</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white rounded-xl p-6">
+                  <h4 className="font-semibold text-gray-900 mb-3">🔥 Hot Trends</h4>
+                  <ul className="space-y-2 text-gray-700">
+                    <li>• Waterfront properties seeing 15% price increase</li>
+                    <li>• 3-bedroom apartments most in demand</li>
+                    <li>• Manama and Riffa leading in sales volume</li>
+                  </ul>
+                </div>
+                <div className="bg-white rounded-xl p-6">
+                  <h4 className="font-semibold text-gray-900 mb-3">💡 Investment Tips</h4>
+                  <ul className="space-y-2 text-gray-700">
+                    <li>• Consider emerging areas like Hamad Town</li>
+                    <li>• Furnished properties yield higher rental returns</li>
+                    <li>• Properties near schools command premium prices</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AIHelp;
