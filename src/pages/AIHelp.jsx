@@ -47,7 +47,9 @@ import {
   ChevronRight,
   ArrowRight,
   Play,
-  Pause
+  Pause,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { Link } from "react-router-dom";
 import { supabase } from "../supabase";
@@ -72,6 +74,7 @@ const AIHelp = () => {
   const [chatHistory, setChatHistory] = useState([]);
   const [aiThinking, setAiThinking] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(true);
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const navigate = useNavigate();
@@ -452,33 +455,14 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
   };
 
   const smartQuestions = [
-    { 
-      category: "Property Search", 
-      questions: [
-        "Show me luxury waterfront properties in Manama",
-        "Find 3-bedroom family homes under $300k",
-        "Best investment properties in Riffa",
-        "Properties with swimming pools and gardens"
-      ]
-    },
-    { 
-      category: "Market Analysis", 
-      questions: [
-        "What are current market trends in Bahrain?",
-        "Best areas for property investment",
-        "Average property prices by location",
-        "ROI analysis for rental properties"
-      ]
-    },
-    { 
-      category: "Neighborhood Insights", 
-      questions: [
-        "Compare Riffa vs Manama for families",
-        "Best areas near international schools",
-        "Upcoming development projects",
-        "Transportation and connectivity options"
-      ]
-    }
+    "Show me luxury waterfront properties in Manama",
+    "Find 3-bedroom family homes under $300k",
+    "Best investment properties in Riffa",
+    "Properties with swimming pools and gardens",
+    "What are current market trends in Bahrain?",
+    "Best areas for property investment",
+    "Compare Riffa vs Manama for families",
+    "Best areas near international schools"
   ];
 
   const handleQuickQuestion = (question) => {
@@ -645,34 +629,44 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
           ))}
         </div>
 
-        {/* Chat Tab */}
+        {/* Chat Tab - Full Width */}
         {activeTab === 'chat' && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Enhanced Chat Interface */}
-            <div className="lg:col-span-3">
-              <div className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border border-white/20 flex flex-col h-[70vh]">
-                {/* Chat Header */}
-                <div className="bg-gradient-to-r from-blue-600/80 to-purple-600/80 backdrop-blur-md p-6 border-b border-white/20 flex-shrink-0">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="relative">
-                        <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center mr-4">
-                          <Bot className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white">
-                          <div className="w-full h-full bg-green-400 rounded-full animate-pulse"></div>
-                        </div>
+          <div className="w-full">
+            {/* Full Width Chat Interface */}
+            <div className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border border-white/20 flex flex-col h-[75vh]">
+              {/* Chat Header */}
+              <div className="bg-gradient-to-r from-blue-600/80 to-purple-600/80 backdrop-blur-md p-6 border-b border-white/20 flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center mr-4">
+                        <Bot className="w-6 h-6 text-white" />
                       </div>
-                      <div>
-                        <h3 className="text-xl font-semibold text-white">AI Property Assistant</h3>
-                        <div className="flex items-center text-blue-100">
-                          <Activity className="w-4 h-4 mr-1" />
-                          <span className="text-sm">
-                            {isLoading ? 'Processing...' : aiThinking ? 'Analyzing...' : 'Online & Ready'}
-                          </span>
-                        </div>
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white">
+                        <div className="w-full h-full bg-green-400 rounded-full animate-pulse"></div>
                       </div>
                     </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-white">AI Property Assistant</h3>
+                      <div className="flex items-center text-blue-100">
+                        <Activity className="w-4 h-4 mr-1" />
+                        <span className="text-sm">
+                          {isLoading ? 'Processing...' : aiThinking ? 'Analyzing...' : 'Online & Ready'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    {/* Quick Actions Toggle */}
+                    <button
+                      onClick={() => setShowQuickActions(!showQuickActions)}
+                      className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                    >
+                      <Lightbulb className="w-4 h-4 mr-2" />
+                      Quick Actions
+                      {showQuickActions ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
+                    </button>
                     
                     <div className="flex items-center gap-2">
                       <button
@@ -691,186 +685,134 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                   </div>
                 </div>
 
-                {/* Messages Container - Fixed Height with Scroll */}
-                <div 
-                  ref={chatContainerRef}
-                  className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-transparent to-black/10 min-h-0"
-                  style={{ maxHeight: 'calc(70vh - 200px)' }}
-                >
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`flex items-start max-w-xs lg:max-w-md ${
-                        message.type === 'user' ? 'flex-row-reverse' : 'flex-row'
+                {/* Quick Actions Bar */}
+                {showQuickActions && (
+                  <div className="mt-4 pt-4 border-t border-white/20">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {smartQuestions.slice(0, 8).map((question, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleQuickQuestion(question)}
+                          className="text-left p-3 text-sm bg-white/10 hover:bg-white/20 text-white/80 hover:text-white rounded-lg transition-all duration-300 border border-white/10 hover:border-white/20 truncate"
+                          title={question}
+                        >
+                          {question}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Messages Container - Fixed Height with Scroll */}
+              <div 
+                ref={chatContainerRef}
+                className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-transparent to-black/10 min-h-0"
+                style={{ maxHeight: showQuickActions ? 'calc(75vh - 280px)' : 'calc(75vh - 200px)' }}
+              >
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`flex items-start max-w-2xl ${
+                      message.type === 'user' ? 'flex-row-reverse' : 'flex-row'
+                    }`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        message.type === 'user' 
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-600 ml-3' 
+                          : 'bg-gradient-to-r from-gray-600 to-gray-700 mr-3'
                       }`}>
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          message.type === 'user' 
-                            ? 'bg-gradient-to-r from-blue-500 to-purple-600 ml-3' 
-                            : 'bg-gradient-to-r from-gray-600 to-gray-700 mr-3'
-                        }`}>
-                          {message.type === 'user' ? (
-                            <User className="w-5 h-5 text-white" />
-                          ) : (
-                            <Bot className="w-5 h-5 text-white" />
+                        {message.type === 'user' ? (
+                          <User className="w-5 h-5 text-white" />
+                        ) : (
+                          <Bot className="w-5 h-5 text-white" />
+                        )}
+                      </div>
+                      <div className={`px-6 py-4 rounded-2xl backdrop-blur-md border ${
+                        message.type === 'user'
+                          ? 'bg-gradient-to-r from-blue-500/80 to-purple-600/80 text-white border-blue-400/30'
+                          : 'bg-white/10 text-white border-white/20'
+                      }`}>
+                        <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                        <div className="flex items-center justify-between mt-3">
+                          <p className={`text-xs ${
+                            message.type === 'user' ? 'text-blue-100' : 'text-white/60'
+                          }`}>
+                            {message.timestamp.toLocaleTimeString()}
+                          </p>
+                          {message.type === 'bot' && (
+                            <div className="flex items-center gap-2">
+                              <button className="p-1 rounded hover:bg-white/10 transition-colors">
+                                <Copy className="w-3 h-3" />
+                              </button>
+                              <button className="p-1 rounded hover:bg-white/10 transition-colors">
+                                <ThumbsUp className="w-3 h-3" />
+                              </button>
+                            </div>
                           )}
                         </div>
-                        <div className={`px-6 py-4 rounded-2xl backdrop-blur-md border ${
-                          message.type === 'user'
-                            ? 'bg-gradient-to-r from-blue-500/80 to-purple-600/80 text-white border-blue-400/30'
-                            : 'bg-white/10 text-white border-white/20'
-                        }`}>
-                          <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                          <div className="flex items-center justify-between mt-3">
-                            <p className={`text-xs ${
-                              message.type === 'user' ? 'text-blue-100' : 'text-white/60'
-                            }`}>
-                              {message.timestamp.toLocaleTimeString()}
-                            </p>
-                            {message.type === 'bot' && (
-                              <div className="flex items-center gap-2">
-                                <button className="p-1 rounded hover:bg-white/10 transition-colors">
-                                  <Copy className="w-3 h-3" />
-                                </button>
-                                <button className="p-1 rounded hover:bg-white/10 transition-colors">
-                                  <ThumbsUp className="w-3 h-3" />
-                                </button>
-                              </div>
-                            )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {(isLoading || isTyping || aiThinking) && (
+                  <div className="flex justify-start">
+                    <div className="flex items-start">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-600 to-gray-700 flex items-center justify-center mr-3 flex-shrink-0">
+                        <Bot className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="bg-white/10 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/20">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce delay-100"></div>
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce delay-200"></div>
                           </div>
+                          <span className="text-white/80 text-sm">
+                            {aiThinking ? 'AI is analyzing...' : 'Generating response...'}
+                          </span>
                         </div>
                       </div>
                     </div>
-                  ))}
-                  
-                  {(isLoading || isTyping || aiThinking) && (
-                    <div className="flex justify-start">
-                      <div className="flex items-start">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-600 to-gray-700 flex items-center justify-center mr-3 flex-shrink-0">
-                          <Bot className="w-5 h-5 text-white" />
-                        </div>
-                        <div className="bg-white/10 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/20">
-                          <div className="flex items-center space-x-3">
-                            <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-                              <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce delay-100"></div>
-                              <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce delay-200"></div>
-                            </div>
-                            <span className="text-white/80 text-sm">
-                              {aiThinking ? 'AI is analyzing...' : 'Generating response...'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Enhanced Input - Fixed at Bottom */}
-                <div className="border-t border-white/20 p-6 bg-white/5 backdrop-blur-md flex-shrink-0">
-                  <div className="flex items-end space-x-4">
-                    <div className="flex-1 relative">
-                      <textarea
-                        value={inputMessage}
-                        onChange={(e) => setInputMessage(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder="Ask me anything about properties in Bahrain..."
-                        className="w-full px-6 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-white placeholder-white/50 max-h-32"
-                        rows="2"
-                        style={{ minHeight: '60px' }}
-                      />
-                      <div className="absolute right-3 bottom-3 flex items-center gap-2">
-                        <button
-                          onClick={() => setIsListening(!isListening)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            isListening ? 'bg-red-500' : 'bg-white/20 hover:bg-white/30'
-                          }`}
-                        >
-                          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={!inputMessage.trim() || isLoading}
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-2xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 flex-shrink-0"
-                    >
-                      <Send className="w-5 h-5" />
-                    </button>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Enhanced Sidebar */}
-            <div className="space-y-6">
-              {/* Smart Questions */}
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 border border-white/20">
-                <h3 className="text-lg font-semibold mb-4 flex items-center text-white">
-                  <Lightbulb className="w-5 h-5 mr-2 text-yellow-400" />
-                  Smart Questions
-                </h3>
-                <div className="space-y-4 max-h-80 overflow-y-auto">
-                  {smartQuestions.map((category, categoryIndex) => (
-                    <div key={categoryIndex}>
-                      <h4 className="text-sm font-medium text-blue-300 mb-2">{category.category}</h4>
-                      <div className="space-y-2">
-                        {category.questions.map((question, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleQuickQuestion(question)}
-                            className="w-full text-left p-3 text-sm bg-white/5 hover:bg-white/10 text-white/80 hover:text-white rounded-lg transition-all duration-300 border border-white/10 hover:border-white/20"
-                          >
-                            {question}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                )}
+                <div ref={messagesEndRef} />
               </div>
 
-              {/* AI Status */}
-              <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-md rounded-2xl p-6 border border-blue-400/30">
-                <h3 className="text-lg font-semibold mb-3 text-white flex items-center">
-                  <Cpu className="w-5 h-5 mr-2 text-blue-400" />
-                  AI Status
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/70 text-sm">Processing Power</span>
-                    <div className="flex items-center">
-                      <div className="w-16 h-2 bg-white/20 rounded-full mr-2">
-                        <div className="w-14 h-2 bg-gradient-to-r from-green-400 to-blue-500 rounded-full"></div>
-                      </div>
-                      <span className="text-green-400 text-sm">87%</span>
+              {/* Enhanced Input - Fixed at Bottom */}
+              <div className="border-t border-white/20 p-6 bg-white/5 backdrop-blur-md flex-shrink-0">
+                <div className="flex items-end space-x-4">
+                  <div className="flex-1 relative">
+                    <textarea
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Ask me anything about properties in Bahrain..."
+                      className="w-full px-6 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-white placeholder-white/50 max-h-32"
+                      rows="2"
+                      style={{ minHeight: '60px' }}
+                    />
+                    <div className="absolute right-3 bottom-3 flex items-center gap-2">
+                      <button
+                        onClick={() => setIsListening(!isListening)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          isListening ? 'bg-red-500' : 'bg-white/20 hover:bg-white/30'
+                        }`}
+                      >
+                        {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/70 text-sm">Response Time</span>
-                    <span className="text-blue-400 text-sm">1.2s</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/70 text-sm">Accuracy</span>
-                    <span className="text-purple-400 text-sm">94.7%</span>
-                  </div>
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!inputMessage.trim() || isLoading}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-2xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 flex-shrink-0"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
                 </div>
-              </div>
-
-              {/* Pro Tips */}
-              <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-md rounded-2xl p-6 border border-yellow-400/30">
-                <h3 className="text-lg font-semibold mb-3 text-white flex items-center">
-                  <Rocket className="w-5 h-5 mr-2 text-yellow-400" />
-                  Pro Tips
-                </h3>
-                <ul className="space-y-2 text-sm text-white/80">
-                  <li>• Be specific about your budget and location</li>
-                  <li>• Mention desired amenities (pool, beach, etc.)</li>
-                  <li>• Ask about specific neighborhoods</li>
-                  <li>• Request investment analysis for ROI insights</li>
-                </ul>
               </div>
             </div>
           </div>
