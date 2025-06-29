@@ -4,6 +4,7 @@ import Login from "./pages/login";
 import Home from "./pages/home";
 import Buy from "./pages/Buy";
 import Favorites from "./pages/Favourites";
+import AIHelp from "./pages/AIHelp";
 
 
 function App() {
@@ -16,6 +17,8 @@ function App() {
       <Route path="/home" element={<Home />} /> 
       <Route path="/buy" element={<Buy />} />
       <Route path="/favourites" element={<Favorites />} />
+      <Route path="/AIHelp" element={<AIHelp />} />
+      {/* Catch-all route to redirect to home if no other route matches */}
     </Routes>
   );
 }
