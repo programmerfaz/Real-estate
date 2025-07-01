@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { 
   MapPin, Bed, Bath, Square, Car, Star, TrendingUp, Award, Users, LogOut, Menu, 
   Home as HomeIcon, Filter, X, Search, Grid3X3, List, Phone, Mail, MessageCircle,
   Calendar, Clock, User, CheckCircle, Send, Heart, Camera, Shield, Wifi, 
-  Dumbbell, Car as CarIcon, Trees, Waves, Building2, ArrowRight
+  Dumbbell, Car as CarIcon, Trees, Waves, Building2, ArrowRight, CreditCard,
+  Lock, Eye, EyeOff
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "../supabase";
@@ -18,6 +19,8 @@ const Rent = () => {
   const [favourites, setFavourites] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPropertyModal, setShowPropertyModal] = useState(false);
   const [bookingForm, setBookingForm] = useState({
     name: '',
     email: '',
@@ -26,7 +29,19 @@ const Rent = () => {
     preferredTime: '',
     message: ''
   });
+  const [paymentForm, setPaymentForm] = useState({
+    cardNumber: '',
+    expiryMonth: '',
+    expiryYear: '',
+    cvv: '',
+    cardholderName: '',
+    email: '',
+    billingAddress: ''
+  });
+  const [showCvv, setShowCvv] = useState(false);
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
+  const [paymentSubmitted, setPaymentSubmitted] = useState(false);
+  const propertiesSectionRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -118,10 +133,36 @@ const Rent = () => {
     }
   };
 
-  const handleBookingSubmit = (e) => {
+  const handleBookingSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically send the booking data to your backend
-    console.log('Booking submitted:', bookingForm);
+    
+    // Send email to developerfaz@gmail.com
+    const emailData = {
+      to: 'developerfaz@gmail.com',
+      subject: `New Booking Request - ${selectedProperty.title}`,
+      body: `
+        New booking request received:
+        
+        Property: ${selectedProperty.title}
+        Location: ${selectedProperty.location}
+        Price: ${formatPrice(selectedProperty.price)}/month
+        
+        Customer Details:
+        Name: ${bookingForm.name}
+        Email: ${bookingForm.email}
+        Phone: ${bookingForm.phone}
+        Preferred Date: ${bookingForm.preferredDate}
+        Preferred Time: ${bookingForm.preferredTime}
+        Message: ${bookingForm.message}
+        
+        Please contact the customer to confirm the booking.
+      `
+    };
+
+    // Create mailto link
+    const mailtoLink = `mailto:developerfaz@gmail.com?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}`;
+    window.open(mailtoLink);
+
     setBookingSubmitted(true);
     setTimeout(() => {
       setShowBookingModal(false);
@@ -137,9 +178,122 @@ const Rent = () => {
     }, 2000);
   };
 
+  const handlePaymentSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      // Store card details in database
+      const { data, error } = await supabase
+        .from('user_cards')
+        .insert([
+          {
+            user_id: userEmail, // Using email as user_id for now
+            full_name: paymentForm.cardholderName,
+            email: paymentForm.email,
+            phone_number: '', // You might want to add this field
+            card_last4: paymentForm.cardNumber.slice(-4),
+            card_brand: getCardBrand(paymentForm.cardNumber),
+            card_expiry_month: parseInt(paymentForm.expiryMonth),
+            card_expiry_year: parseInt(paymentForm.expiryYear),
+            encrypted_token: btoa(paymentForm.cardNumber), // Basic encoding - use proper encryption in production
+            billing_address: paymentForm.billingAddress
+          }
+        ]);
+
+      if (error) {
+        console.error('Error storing payment details:', error);
+        alert('Error processing payment. Please try again.');
+        return;
+      }
+
+      // Send success email to user
+      const successEmailData = {
+        to: paymentForm.email,
+        subject: 'Payment Successful - Wealth Home',
+        body: `
+          Dear ${paymentForm.cardholderName},
+          
+          Your payment has been processed successfully!
+          
+          Payment Details:
+          Card ending in: ****${paymentForm.cardNumber.slice(-4)}
+          Amount: Down payment for ${selectedProperty?.title || 'Property'}
+          Date: ${new Date().toLocaleDateString()}
+          
+          Thank you for choosing Wealth Home.
+          
+          Best regards,
+          Wealth Home Team
+        `
+      };
+
+      const successMailtoLink = `mailto:${paymentForm.email}?subject=${encodeURIComponent(successEmailData.subject)}&body=${encodeURIComponent(successEmailData.body)}`;
+      window.open(successMailtoLink);
+
+      setPaymentSubmitted(true);
+      setTimeout(() => {
+        setShowPaymentModal(false);
+        setPaymentSubmitted(false);
+        setPaymentForm({
+          cardNumber: '',
+          expiryMonth: '',
+          expiryYear: '',
+          cvv: '',
+          cardholderName: '',
+          email: '',
+          billingAddress: ''
+        });
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      alert('Error processing payment. Please try again.');
+    }
+  };
+
+  const getCardBrand = (cardNumber) => {
+    const number = cardNumber.replace(/\s/g, '');
+    if (number.startsWith('4')) return 'Visa';
+    if (number.startsWith('5') || number.startsWith('2')) return 'Mastercard';
+    if (number.startsWith('3')) return 'American Express';
+    return 'Unknown';
+  };
+
+  const formatCardNumber = (value) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    const matches = v.match(/\d{4,16}/g);
+    const match = matches && matches[0] || '';
+    const parts = [];
+    for (let i = 0, len = match.length; i < len; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+    if (parts.length) {
+      return parts.join(' ');
+    } else {
+      return v;
+    }
+  };
+
   const openBookingModal = (property) => {
     setSelectedProperty(property);
     setShowBookingModal(true);
+  };
+
+  const openPaymentModal = (property) => {
+    setSelectedProperty(property);
+    setShowPaymentModal(true);
+  };
+
+  const openPropertyModal = (property) => {
+    setSelectedProperty(property);
+    setShowPropertyModal(true);
+  };
+
+  const scrollToProperties = () => {
+    propertiesSectionRef.current?.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'start'
+    });
   };
 
   const formatPrice = (price) => `${price?.toLocaleString() || 0} BHD`;
@@ -265,7 +419,10 @@ const Rent = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <button className="group bg-white text-blue-900 px-8 py-4 rounded-xl hover:bg-blue-50 transition-all duration-300 font-semibold text-lg flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105">
+            <button 
+              onClick={scrollToProperties}
+              className="group bg-white text-blue-900 px-8 py-4 rounded-xl hover:bg-blue-50 transition-all duration-300 font-semibold text-lg flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
               Browse Rentals
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </button>
@@ -298,7 +455,7 @@ const Rent = () => {
 
       {/* Featured Properties */}
       {featuredProperties.length > 0 && (
-        <section className="py-16 bg-white">
+        <section ref={propertiesSectionRef} className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold text-gray-900 mb-4">Featured Rental Properties</h2>
@@ -319,22 +476,6 @@ const Rent = () => {
                       <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
                         Featured
                       </span>
-                    </div>
-
-                    <div className="absolute top-4 right-4">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavourite(property.id);
-                        }}
-                        className="p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
-                      >
-                        <Heart
-                          className={`w-5 h-5 transition-colors ${
-                            favourites.includes(property.id) ? "text-red-500 fill-red-500" : "text-gray-600"
-                          }`}
-                        />
-                      </button>
                     </div>
 
                     <div className="absolute bottom-4 right-4 bg-black/50 text-white px-2 py-1 rounded-lg text-sm flex items-center gap-1">
@@ -379,7 +520,7 @@ const Rent = () => {
                     </div>
 
                     {/* Contact Buttons */}
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-2 mb-3">
                       <button
                         onClick={() => openBookingModal(property)}
                         className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-1"
@@ -388,9 +529,19 @@ const Rent = () => {
                         Book
                       </button>
                       
+                      <button
+                        onClick={() => openPropertyModal(property)}
+                        className="bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium flex items-center justify-center gap-1"
+                      >
+                        <Eye className="w-3 h-3" />
+                        View Details
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
                       <a
                         href={generateEmailLink(property)}
-                        className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center justify-center gap-1"
+                        className="bg-green-600 text-white px-2 py-2 rounded-lg hover:bg-green-700 transition-colors text-xs font-medium flex items-center justify-center gap-1"
                       >
                         <Mail className="w-3 h-3" />
                         Email
@@ -400,11 +551,19 @@ const Rent = () => {
                         href={generateWhatsAppLink(property)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-emerald-600 text-white px-3 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium flex items-center justify-center gap-1"
+                        className="bg-emerald-600 text-white px-2 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-xs font-medium flex items-center justify-center gap-1"
                       >
                         <MessageCircle className="w-3 h-3" />
                         Chat
                       </a>
+
+                      <button
+                        onClick={() => openPaymentModal(property)}
+                        className="bg-purple-600 text-white px-2 py-2 rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium flex items-center justify-center gap-1"
+                      >
+                        <CreditCard className="w-3 h-3" />
+                        Pay
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -431,20 +590,6 @@ const Rent = () => {
                     alt={property.title}
                     className="w-full h-48 object-cover"
                   />
-                  
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavourite(property.id);
-                    }}
-                    className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
-                  >
-                    <Heart
-                      className={`w-4 h-4 transition-colors ${
-                        favourites.includes(property.id) ? "text-red-500 fill-red-500" : "text-gray-600"
-                      }`}
-                    />
-                  </button>
                 </div>
 
                 <div className="p-4">
@@ -478,7 +623,7 @@ const Rent = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-1">
+                  <div className="grid grid-cols-2 gap-1 mb-2">
                     <button
                       onClick={() => openBookingModal(property)}
                       className="bg-blue-600 text-white px-2 py-1.5 rounded text-xs font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
@@ -487,6 +632,16 @@ const Rent = () => {
                       Book
                     </button>
                     
+                    <button
+                      onClick={() => openPropertyModal(property)}
+                      className="bg-gray-600 text-white px-2 py-1.5 rounded text-xs font-medium hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <Eye className="w-3 h-3" />
+                      View
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-1">
                     <a
                       href={generateEmailLink(property)}
                       className="bg-green-600 text-white px-2 py-1.5 rounded text-xs font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-1"
@@ -504,6 +659,14 @@ const Rent = () => {
                       <MessageCircle className="w-3 h-3" />
                       Chat
                     </a>
+
+                    <button
+                      onClick={() => openPaymentModal(property)}
+                      className="bg-purple-600 text-white px-2 py-1.5 rounded text-xs font-medium hover:bg-purple-700 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <CreditCard className="w-3 h-3" />
+                      Pay
+                    </button>
                   </div>
                 </div>
               </div>
@@ -521,6 +684,32 @@ const Rent = () => {
           )}
         </div>
       </section>
+
+      {/* Property Details Modal */}
+      {showPropertyModal && selectedProperty && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <h3 className="text-2xl font-bold text-gray-900">Property Details</h3>
+                <button
+                  onClick={() => setShowPropertyModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <PropertyCard
+                {...selectedProperty}
+                isFavourite={favourites.includes(selectedProperty.id)}
+                toggleFavourite={() => toggleFavourite(selectedProperty.id)}
+                showViewButton={false}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Booking Modal */}
       {showBookingModal && selectedProperty && (
@@ -675,6 +864,210 @@ const Rent = () => {
                   <div className="bg-green-50 p-4 rounded-lg text-sm text-green-800">
                     <p><strong>Reference:</strong> BK{Date.now().toString().slice(-6)}</p>
                     <p><strong>Agent:</strong> {selectedProperty.agent_name}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      {showPaymentModal && selectedProperty && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Make Down Payment</h3>
+                  <p className="text-gray-600">{selectedProperty.title}</p>
+                  <p className="text-sm text-gray-500">Secure your rental with a down payment</p>
+                </div>
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              {!paymentSubmitted ? (
+                <form onSubmit={handlePaymentSubmit} className="space-y-6">
+                  {/* Card Number */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Card Number *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={paymentForm.cardNumber}
+                        onChange={(e) => setPaymentForm({...paymentForm, cardNumber: formatCardNumber(e.target.value)})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-12"
+                        placeholder="1234 5678 9012 3456"
+                        maxLength={19}
+                      />
+                      <CreditCard className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    </div>
+                  </div>
+
+                  {/* Expiry and CVV */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Expiry Month *
+                      </label>
+                      <select
+                        required
+                        value={paymentForm.expiryMonth}
+                        onChange={(e) => setPaymentForm({...paymentForm, expiryMonth: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">MM</option>
+                        {Array.from({length: 12}, (_, i) => (
+                          <option key={i+1} value={String(i+1).padStart(2, '0')}>
+                            {String(i+1).padStart(2, '0')}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Expiry Year *
+                      </label>
+                      <select
+                        required
+                        value={paymentForm.expiryYear}
+                        onChange={(e) => setPaymentForm({...paymentForm, expiryYear: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">YYYY</option>
+                        {Array.from({length: 10}, (_, i) => (
+                          <option key={i} value={new Date().getFullYear() + i}>
+                            {new Date().getFullYear() + i}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        CVV *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showCvv ? "text" : "password"}
+                          required
+                          value={paymentForm.cvv}
+                          onChange={(e) => setPaymentForm({...paymentForm, cvv: e.target.value.replace(/\D/g, '').slice(0, 4)})}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                          placeholder="123"
+                          maxLength={4}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCvv(!showCvv)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          {showCvv ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cardholder Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cardholder Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={paymentForm.cardholderName}
+                      onChange={(e) => setPaymentForm({...paymentForm, cardholderName: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="John Doe"
+                    />
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={paymentForm.email}
+                      onChange={(e) => setPaymentForm({...paymentForm, email: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="john@example.com"
+                    />
+                  </div>
+
+                  {/* Billing Address */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Billing Address *
+                    </label>
+                    <textarea
+                      required
+                      value={paymentForm.billingAddress}
+                      onChange={(e) => setPaymentForm({...paymentForm, billingAddress: e.target.value})}
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter your billing address"
+                    />
+                  </div>
+
+                  {/* Payment Summary */}
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 mb-2">Payment Summary</h4>
+                    <div className="text-sm text-blue-800">
+                      <p><strong>Property:</strong> {selectedProperty.title}</p>
+                      <p><strong>Monthly Rent:</strong> {formatPrice(selectedProperty.price)}</p>
+                      <p><strong>Down Payment:</strong> {formatPrice(Math.round(selectedProperty.price * 0.1))}</p>
+                    </div>
+                  </div>
+
+                  {/* Security Notice */}
+                  <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                    <Lock className="w-4 h-4 text-green-600" />
+                    <span>Your payment information is secure and encrypted</span>
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowPaymentModal(false)}
+                      className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      Process Payment
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Payment Successful!</h3>
+                  <p className="text-gray-600 mb-4">
+                    Your down payment has been processed successfully. A confirmation email has been sent to your email address.
+                  </p>
+                  <div className="bg-green-50 p-4 rounded-lg text-sm text-green-800">
+                    <p><strong>Transaction ID:</strong> TXN{Date.now().toString().slice(-8)}</p>
+                    <p><strong>Amount:</strong> {formatPrice(Math.round(selectedProperty.price * 0.1))}</p>
+                    <p><strong>Card:</strong> ****{paymentForm.cardNumber.slice(-4)}</p>
                   </div>
                 </div>
               )}
