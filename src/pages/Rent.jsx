@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MapPin, Bed, Bath, Square, Car, Star, TrendingUp, Award, Users, LogOut, Menu, Home as HomeIcon, Filter, X, Search, Grid3X3, List, SortAsc, Bookmark, Share2, Eye, Calendar, DollarSign, Phone, Mail, MessageCircle, CreditCard, Check } from "lucide-react";
+import { MapPin, Bed, Bath, Square, Car, Star, TrendingUp, Award, Users, LogOut, Menu, Home as HomeIcon, Filter, X, Search, Grid3X3, List, SortAsc, Bookmark, Share2, Eye, Calendar, DollarSign, Phone, Mail, MessageCircle, CreditCard, Check,Camera } from "lucide-react";
 import SearchBar from '../components/SearchBar';
 import PropertyCard from "../components/PropertyCard";
 import { Link } from "react-router-dom";
