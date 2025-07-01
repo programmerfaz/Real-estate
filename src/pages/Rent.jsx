@@ -1,34 +1,38 @@
-import React, { useEffect, useState, useRef } from "react";
-import { 
-  MapPin, Bed, Bath, Square, Car, Star, TrendingUp, Award, Users, LogOut, Menu, 
-  Home as HomeIcon, Filter, X, Search, Grid3X3, List, Phone, Mail, MessageCircle,
-  Calendar, Clock, User, CheckCircle, Send, Heart, Camera, Shield, Wifi, 
-  Dumbbell, Car as CarIcon, Trees, Waves, Building2, ArrowRight, CreditCard,
-  Lock, Eye, EyeOff
-} from "lucide-react";
+import React, { useEffect, useState, useRef } from 'react';
+import { MapPin, Bed, Bath, Square, Car, Star, TrendingUp, Award, Users, LogOut, Menu, Home as HomeIcon, Filter, X, Search, Grid3X3, List, SortAsc, Bookmark, Share2, Eye, Calendar, DollarSign, Phone, Mail, MessageCircle, CreditCard, Lock, Shield, CheckCircle, AlertCircle, Camera } from 'lucide-react';
 import { Link } from "react-router-dom";
 import { supabase } from "../supabase";
 import { auth } from "../firebase";
 import { useNavigate } from 'react-router-dom';
-import PropertyCard from "../components/PropertyCard";
+import { Dialog } from '@headlessui/react';
+import emailjs from '@emailjs/browser';
 
 const Rent = () => {
   const [userEmail, setUserEmail] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [allProperties, setAllProperties] = useState([]);
-  const [favourites, setFavourites] = useState([]);
-  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [visibleProperties, setVisibleProperties] = useState(12);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showPropertyModal, setShowPropertyModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const propertiesSectionRef = useRef(null);
+  const navigate = useNavigate();
+
+  // Booking form state
   const [bookingForm, setBookingForm] = useState({
-    name: '',
+    fullName: '',
     email: '',
     phone: '',
-    preferredDate: '',
-    preferredTime: '',
+    moveInDate: '',
     message: ''
   });
+
+  // Payment form state
   const [paymentForm, setPaymentForm] = useState({
     cardNumber: '',
     expiryMonth: '',
@@ -38,40 +42,19 @@ const Rent = () => {
     email: '',
     billingAddress: ''
   });
+
   const [showCvv, setShowCvv] = useState(false);
-  const [bookingSubmitted, setBookingSubmitted] = useState(false);
-  const [paymentSubmitted, setPaymentSubmitted] = useState(false);
-  const propertiesSectionRef = useRef(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         setUserEmail(user.email);
-        fetchFavourites(user.email);
       } else {
         setUserEmail(null);
-        setFavourites([]);
       }
     });
     return () => unsubscribe();
   }, []);
-
-  const fetchFavourites = async (email) => {
-    try {
-      const { data, error } = await supabase
-        .from('favourites')
-        .select('property_id')
-        .eq('user_email', email);
-
-      if (!error && data) {
-        const ids = data.map((fav) => fav.property_id);
-        setFavourites(ids);
-      }
-    } catch (error) {
-      console.error('Error fetching favourites:', error);
-    }
-  };
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -100,164 +83,7 @@ const Rent = () => {
     }
   };
 
-  const toggleFavourite = async (propertyId) => {
-    if (!userEmail) {
-      alert("Please sign in to manage favourites.");
-      return;
-    }
-
-    const isFavourite = favourites.includes(propertyId);
-
-    try {
-      if (isFavourite) {
-        const { error } = await supabase
-          .from('favourites')
-          .delete()
-          .eq('user_email', userEmail)
-          .eq('property_id', propertyId);
-
-        if (!error) {
-          setFavourites(favourites.filter((id) => id !== propertyId));
-        }
-      } else {
-        const { error } = await supabase.from('favourites').insert([
-          { user_email: userEmail, property_id: propertyId },
-        ]);
-
-        if (!error) {
-          setFavourites([...favourites, propertyId]);
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling favourite:', error);
-    }
-  };
-
-  const handleBookingSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Send email to developerfaz@gmail.com
-    const emailData = {
-      to: 'developerfaz@gmail.com',
-      subject: `New Booking Request - ${selectedProperty.title}`,
-      body: `
-        New booking request received:
-        
-        Property: ${selectedProperty.title}
-        Location: ${selectedProperty.location}
-        Price: ${formatPrice(selectedProperty.price)}/month
-        
-        Customer Details:
-        Name: ${bookingForm.name}
-        Email: ${bookingForm.email}
-        Phone: ${bookingForm.phone}
-        Preferred Date: ${bookingForm.preferredDate}
-        Preferred Time: ${bookingForm.preferredTime}
-        Message: ${bookingForm.message}
-        
-        Please contact the customer to confirm the booking.
-      `
-    };
-
-    // Create mailto link
-    const mailtoLink = `mailto:developerfaz@gmail.com?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}`;
-    window.open(mailtoLink);
-
-    setBookingSubmitted(true);
-    setTimeout(() => {
-      setShowBookingModal(false);
-      setBookingSubmitted(false);
-      setBookingForm({
-        name: '',
-        email: '',
-        phone: '',
-        preferredDate: '',
-        preferredTime: '',
-        message: ''
-      });
-    }, 2000);
-  };
-
-  const handlePaymentSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      // Store card details in database
-      const { data, error } = await supabase
-        .from('user_cards')
-        .insert([
-          {
-            user_id: userEmail, // Using email as user_id for now
-            full_name: paymentForm.cardholderName,
-            email: paymentForm.email,
-            phone_number: '', // You might want to add this field
-            card_last4: paymentForm.cardNumber.slice(-4),
-            card_brand: getCardBrand(paymentForm.cardNumber),
-            card_expiry_month: parseInt(paymentForm.expiryMonth),
-            card_expiry_year: parseInt(paymentForm.expiryYear),
-            encrypted_token: btoa(paymentForm.cardNumber), // Basic encoding - use proper encryption in production
-            billing_address: paymentForm.billingAddress
-          }
-        ]);
-
-      if (error) {
-        console.error('Error storing payment details:', error);
-        alert('Error processing payment. Please try again.');
-        return;
-      }
-
-      // Send success email to user
-      const successEmailData = {
-        to: paymentForm.email,
-        subject: 'Payment Successful - Wealth Home',
-        body: `
-          Dear ${paymentForm.cardholderName},
-          
-          Your payment has been processed successfully!
-          
-          Payment Details:
-          Card ending in: ****${paymentForm.cardNumber.slice(-4)}
-          Amount: Down payment for ${selectedProperty?.title || 'Property'}
-          Date: ${new Date().toLocaleDateString()}
-          
-          Thank you for choosing Wealth Home.
-          
-          Best regards,
-          Wealth Home Team
-        `
-      };
-
-      const successMailtoLink = `mailto:${paymentForm.email}?subject=${encodeURIComponent(successEmailData.subject)}&body=${encodeURIComponent(successEmailData.body)}`;
-      window.open(successMailtoLink);
-
-      setPaymentSubmitted(true);
-      setTimeout(() => {
-        setShowPaymentModal(false);
-        setPaymentSubmitted(false);
-        setPaymentForm({
-          cardNumber: '',
-          expiryMonth: '',
-          expiryYear: '',
-          cvv: '',
-          cardholderName: '',
-          email: '',
-          billingAddress: ''
-        });
-      }, 3000);
-
-    } catch (error) {
-      console.error('Error processing payment:', error);
-      alert('Error processing payment. Please try again.');
-    }
-  };
-
-  const getCardBrand = (cardNumber) => {
-    const number = cardNumber.replace(/\s/g, '');
-    if (number.startsWith('4')) return 'Visa';
-    if (number.startsWith('5') || number.startsWith('2')) return 'Mastercard';
-    if (number.startsWith('3')) return 'American Express';
-    return 'Unknown';
-  };
+  const formatPrice = (price) => `${price?.toLocaleString() || 0} BHD`;
 
   const formatCardNumber = (value) => {
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
@@ -274,6 +100,134 @@ const Rent = () => {
     }
   };
 
+  const getCardBrand = (cardNumber) => {
+    const number = cardNumber.replace(/\s/g, '');
+    if (/^4/.test(number)) return 'Visa';
+    if (/^5[1-5]/.test(number)) return 'Mastercard';
+    if (/^3[47]/.test(number)) return 'American Express';
+    if (/^6/.test(number)) return 'Discover';
+    return 'Card';
+  };
+
+  const scrollToProperties = () => {
+    propertiesSectionRef.current?.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'start'
+    });
+  };
+
+  const handleBookingSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Send email directly using EmailJS
+      const templateParams = {
+        to_email: 'developerfaz@gmail.com',
+        from_name: bookingForm.fullName,
+        from_email: bookingForm.email,
+        phone: bookingForm.phone,
+        property_title: selectedProperty.title,
+        property_location: selectedProperty.location,
+        property_price: formatPrice(selectedProperty.price),
+        move_in_date: bookingForm.moveInDate,
+        message: bookingForm.message,
+        subject: `New Rental Booking Request - ${selectedProperty.title}`
+      };
+
+      // Initialize EmailJS (you'll need to set up your EmailJS account)
+      await emailjs.send(
+        'service_your_service_id', // Replace with your EmailJS service ID
+        'template_booking', // Replace with your EmailJS template ID
+        templateParams,
+        'your_public_key' // Replace with your EmailJS public key
+      );
+
+      setBookingSuccess(true);
+      setTimeout(() => {
+        setShowBookingModal(false);
+        setBookingSuccess(false);
+        setBookingForm({
+          fullName: '',
+          email: '',
+          phone: '',
+          moveInDate: '',
+          message: ''
+        });
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error sending booking email:', error);
+      alert('Error sending booking request. Please try again.');
+    }
+
+    setIsSubmitting(false);
+  };
+
+  const handlePaymentSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Store card details in database
+      const { error } = await supabase.from('user_cards').insert([
+        {
+          user_id: userEmail,
+          full_name: paymentForm.cardholderName,
+          email: paymentForm.email,
+          phone_number: bookingForm.phone || '',
+          card_last4: paymentForm.cardNumber.slice(-4),
+          card_brand: getCardBrand(paymentForm.cardNumber),
+          card_expiry_month: parseInt(paymentForm.expiryMonth),
+          card_expiry_year: parseInt(paymentForm.expiryYear),
+          encrypted_token: btoa(paymentForm.cardNumber), // Basic encoding - use proper encryption in production
+          billing_address: paymentForm.billingAddress
+        }
+      ]);
+
+      if (error) throw error;
+
+      // Send payment confirmation email
+      const templateParams = {
+        to_email: paymentForm.email,
+        from_name: 'Wealth Home',
+        customer_name: paymentForm.cardholderName,
+        property_title: selectedProperty.title,
+        amount: (selectedProperty.price * 0.1).toLocaleString(),
+        transaction_id: `TXN${Date.now()}`,
+        subject: 'Payment Successful - Down Payment Confirmation'
+      };
+
+      await emailjs.send(
+        'service_your_service_id',
+        'template_payment_success',
+        templateParams,
+        'your_public_key'
+      );
+
+      setPaymentSuccess(true);
+      setTimeout(() => {
+        setShowPaymentModal(false);
+        setPaymentSuccess(false);
+        setPaymentForm({
+          cardNumber: '',
+          expiryMonth: '',
+          expiryYear: '',
+          cvv: '',
+          cardholderName: '',
+          email: '',
+          billingAddress: ''
+        });
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      alert('Error processing payment. Please try again.');
+    }
+
+    setIsSubmitting(false);
+  };
+
   const openBookingModal = (property) => {
     setSelectedProperty(property);
     setShowBookingModal(true);
@@ -284,33 +238,111 @@ const Rent = () => {
     setShowPaymentModal(true);
   };
 
-  const openPropertyModal = (property) => {
+  const openViewModal = (property) => {
     setSelectedProperty(property);
-    setShowPropertyModal(true);
+    setCurrentImageIndex(0);
+    setShowViewModal(true);
   };
 
-  const scrollToProperties = () => {
-    propertiesSectionRef.current?.scrollIntoView({ 
-      behavior: 'smooth',
-      block: 'start'
-    });
-  };
+  const PropertyCard = ({ property }) => (
+    <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:scale-105">
+      <div className="relative overflow-hidden">
+        <img
+          src={property.image}
+          alt={property.title}
+          className="w-full h-64 object-cover transition-transform duration-300"
+        />
+        
+        <div className="absolute top-4 left-4">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-600 text-white">
+            For Rent
+          </span>
+        </div>
 
-  const formatPrice = (price) => `${price?.toLocaleString() || 0} BHD`;
+        <div className="absolute bottom-4 right-4 bg-black/50 text-white px-2 py-1 rounded-lg text-sm flex items-center gap-1">
+          <Camera className="w-3 h-3" />
+          {(property.images?.length || 0) + 1}
+        </div>
+      </div>
 
-  const generateEmailLink = (property) => {
-    const subject = `Inquiry about ${property.title}`;
-    const body = `Hi,\n\nI'm interested in renting the property: ${property.title}\nLocation: ${property.location}\nPrice: ${formatPrice(property.price)}/month\n\nPlease provide more details.\n\nBest regards`;
-    return `mailto:${property.agent_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  };
+      <div className="p-6">
+        <div className="flex items-center gap-1 text-sm text-gray-500 mb-2">
+          <MapPin className="w-4 h-4" />
+          {property.location}
+        </div>
 
-  const generateWhatsAppLink = (property) => {
-    const message = `Hi! I'm interested in renting ${property.title} in ${property.location}. Could you please provide more details?`;
-    return `https://wa.me/${property.agent_phone?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-  };
+        <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+          {property.title}
+        </h3>
 
-  const featuredProperties = allProperties.filter(p => p.featured).slice(0, 6);
-  const regularProperties = allProperties.filter(p => !p.featured).slice(0, 12);
+        <div className="flex items-center gap-4 text-gray-600 mb-4">
+          <div className="flex items-center gap-1">
+            <Bed className="w-4 h-4" />
+            <span className="text-sm">{property.bedrooms} Beds</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Bath className="w-4 h-4" />
+            <span className="text-sm">{property.bathrooms} Baths</span>
+          </div>
+          <div className="text-sm">{property.sqft} sq ft</div>
+        </div>
+
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <span className="text-2xl font-bold text-gray-900">
+              {formatPrice(property.price)}
+            </span>
+            <span className="text-gray-500 text-sm ml-1">/month</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3">
+          <button
+            onClick={() => openViewModal(property)}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            View Details
+          </button>
+          
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => openBookingModal(property)}
+              className="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+            >
+              Book Now
+            </button>
+            
+            <button
+              onClick={() => openPaymentModal(property)}
+              className="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors font-medium text-sm"
+            >
+              Down Payment
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <a
+              href={`mailto:${property.agent_email}?subject=Inquiry about ${property.title}`}
+              className="flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+            >
+              <Mail className="w-4 h-4" />
+              Email Agent
+            </a>
+            
+            <a
+              href={`https://wa.me/${property.agent_phone?.replace(/\D/g, '')}?text=Hi, I'm interested in ${property.title}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 bg-green-100 text-green-700 py-2 px-4 rounded-lg hover:bg-green-200 transition-colors text-sm"
+            >
+              <MessageCircle className="w-4 h-4" />
+              WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -393,708 +425,624 @@ const Rent = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 py-20 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-green-900 via-green-800 to-green-700 py-24 overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
           }}></div>
         </div>
         
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center px-4 py-2 bg-blue-800/50 rounded-full text-blue-200 text-sm font-medium mb-6">
-            <Building2 className="w-4 h-4 mr-2" />
-            Premium Rental Properties
-          </div>
-          
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-            Find Your Perfect
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-cyan-300">
-              Rental Home
-            </span>
-          </h1>
-          
-          <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Discover exceptional rental properties across Bahrain. From luxury apartments to family villas, 
-            find your ideal home with flexible booking and direct agent contact.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <button 
-              onClick={scrollToProperties}
-              className="group bg-white text-blue-900 px-8 py-4 rounded-xl hover:bg-blue-50 transition-all duration-300 font-semibold text-lg flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
-            >
-              Browse Rentals
-              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-            </button>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="inline-flex items-center px-4 py-2 bg-green-800/50 rounded-full text-green-200 text-sm font-medium mb-6">
+              <HomeIcon className="w-4 h-4 mr-2" />
+              Premium Rental Properties
+            </div>
             
-            <Link to="/AIHelp">
-              <button className="group border-2 border-white text-white px-8 py-4 rounded-xl hover:bg-white hover:text-blue-900 transition-all duration-300 font-semibold text-lg flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                Get AI Assistance
-              </button>
-            </Link>
-          </div>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+              Rent Your
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-300 to-emerald-300">
+                Perfect Home
+              </span>
+            </h1>
+            
+            <p className="text-xl text-green-100 mb-8 max-w-2xl mx-auto leading-relaxed">
+              Discover premium rental properties across Bahrain. From luxury apartments to family villas, 
+              find your ideal home with flexible rental terms and professional management.
+            </p>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-6 text-center max-w-2xl mx-auto">
-            <div>
-              <div className="text-3xl font-bold text-white">{allProperties.length}+</div>
-              <div className="text-blue-200 text-sm">Available Rentals</div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              <button
+                onClick={scrollToProperties}
+                className="group bg-white text-green-900 px-8 py-4 rounded-xl hover:bg-green-50 transition-all duration-300 font-semibold text-lg flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                Browse Rentals
+                <Search className="w-5 h-5 ml-2 group-hover:scale-110 transition-transform" />
+              </button>
+              
+              <Link to="/AIHelp">
+                <button className="group border-2 border-white text-white px-8 py-4 rounded-xl hover:bg-white hover:text-green-900 transition-all duration-300 font-semibold text-lg flex items-center justify-center">
+                  <MessageCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                  Get Expert Help
+                </button>
+              </Link>
             </div>
-            <div>
-              <div className="text-3xl font-bold text-white">24/7</div>
-              <div className="text-blue-200 text-sm">Agent Support</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-white">Instant</div>
-              <div className="text-blue-200 text-sm">Booking</div>
+
+            <div className="grid grid-cols-3 gap-6 text-center max-w-2xl mx-auto">
+              <div>
+                <div className="text-3xl font-bold text-white">{allProperties.length}+</div>
+                <div className="text-green-200 text-sm">Available Rentals</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-white">24/7</div>
+                <div className="text-green-200 text-sm">Support</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-white">100%</div>
+                <div className="text-green-200 text-sm">Verified</div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Featured Properties */}
-      {featuredProperties.length > 0 && (
-        <section ref={propertiesSectionRef} className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">Featured Rental Properties</h2>
-              <p className="text-xl text-gray-600">Premium properties with instant booking available</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featuredProperties.map((property) => (
-                <div key={property.id} className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:scale-105">
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={property.image}
-                      alt={property.title}
-                      className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110"
-                    />
-                    
-                    <div className="absolute top-4 left-4">
-                      <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                        Featured
-                      </span>
-                    </div>
-
-                    <div className="absolute bottom-4 right-4 bg-black/50 text-white px-2 py-1 rounded-lg text-sm flex items-center gap-1">
-                      <Camera className="w-3 h-3" />
-                      {(property.images?.length || 0) + 1}
-                    </div>
-                  </div>
-
-                  <div className="p-6">
-                    <div className="flex items-center gap-1 text-sm text-gray-500 mb-2">
-                      <MapPin className="w-4 h-4" />
-                      {property.location}
-                    </div>
-
-                    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
-                      {property.title}
-                    </h3>
-
-                    <div className="flex items-center gap-4 text-gray-600 mb-4">
-                      <div className="flex items-center gap-1">
-                        <Bed className="w-4 h-4" />
-                        <span className="text-sm">{property.bedrooms} Beds</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Bath className="w-4 h-4" />
-                        <span className="text-sm">{property.bathrooms} Baths</span>
-                      </div>
-                      <div className="text-sm">{property.sqft} sq ft</div>
-                    </div>
-
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <span className="text-2xl font-bold text-gray-900">
-                          {formatPrice(property.price)}
-                        </span>
-                        <span className="text-gray-500 text-sm ml-1">/month</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span className="text-sm font-medium">{property.rating || 4.5}</span>
-                      </div>
-                    </div>
-
-                    {/* Contact Buttons */}
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <button
-                        onClick={() => openBookingModal(property)}
-                        className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-1"
-                      >
-                        <Calendar className="w-3 h-3" />
-                        Book
-                      </button>
-                      
-                      <button
-                        onClick={() => openPropertyModal(property)}
-                        className="bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium flex items-center justify-center gap-1"
-                      >
-                        <Eye className="w-3 h-3" />
-                        View Details
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2">
-                      <a
-                        href={generateEmailLink(property)}
-                        className="bg-green-600 text-white px-2 py-2 rounded-lg hover:bg-green-700 transition-colors text-xs font-medium flex items-center justify-center gap-1"
-                      >
-                        <Mail className="w-3 h-3" />
-                        Email
-                      </a>
-                      
-                      <a
-                        href={generateWhatsAppLink(property)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-emerald-600 text-white px-2 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-xs font-medium flex items-center justify-center gap-1"
-                      >
-                        <MessageCircle className="w-3 h-3" />
-                        Chat
-                      </a>
-
-                      <button
-                        onClick={() => openPaymentModal(property)}
-                        className="bg-purple-600 text-white px-2 py-2 rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium flex items-center justify-center gap-1"
-                      >
-                        <CreditCard className="w-3 h-3" />
-                        Pay
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* All Properties */}
-      <section className="py-16 bg-gray-50">
+      {/* Properties Section */}
+      <section ref={propertiesSectionRef} className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">All Rental Properties</h2>
-            <p className="text-xl text-gray-600">Explore our complete collection of rental homes</p>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Available Rental Properties</h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Explore our curated collection of rental properties with competitive rates and premium amenities.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {regularProperties.map((property) => (
-              <div key={property.id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">
-                <div className="relative">
-                  <img
-                    src={property.image}
-                    alt={property.title}
-                    className="w-full h-48 object-cover"
-                  />
-                </div>
-
-                <div className="p-4">
-                  <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
-                    <MapPin className="w-3 h-3" />
-                    {property.location}
-                  </div>
-
-                  <h3 className="font-semibold text-gray-900 mb-2 text-sm line-clamp-2">
-                    {property.title}
-                  </h3>
-
-                  <div className="flex items-center gap-3 text-gray-600 mb-3 text-xs">
-                    <div className="flex items-center gap-1">
-                      <Bed className="w-3 h-3" />
-                      <span>{property.bedrooms}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Bath className="w-3 h-3" />
-                      <span>{property.bathrooms}</span>
-                    </div>
-                    <div>{property.sqft} sq ft</div>
-                  </div>
-
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <span className="text-lg font-bold text-gray-900">
-                        {formatPrice(property.price)}
-                      </span>
-                      <span className="text-gray-500 text-xs ml-1">/mo</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-1 mb-2">
-                    <button
-                      onClick={() => openBookingModal(property)}
-                      className="bg-blue-600 text-white px-2 py-1.5 rounded text-xs font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
-                    >
-                      <Calendar className="w-3 h-3" />
-                      Book
-                    </button>
-                    
-                    <button
-                      onClick={() => openPropertyModal(property)}
-                      className="bg-gray-600 text-white px-2 py-1.5 rounded text-xs font-medium hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
-                    >
-                      <Eye className="w-3 h-3" />
-                      View
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-1">
-                    <a
-                      href={generateEmailLink(property)}
-                      className="bg-green-600 text-white px-2 py-1.5 rounded text-xs font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-1"
-                    >
-                      <Mail className="w-3 h-3" />
-                      Email
-                    </a>
-                    
-                    <a
-                      href={generateWhatsAppLink(property)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-emerald-600 text-white px-2 py-1.5 rounded text-xs font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1"
-                    >
-                      <MessageCircle className="w-3 h-3" />
-                      Chat
-                    </a>
-
-                    <button
-                      onClick={() => openPaymentModal(property)}
-                      className="bg-purple-600 text-white px-2 py-1.5 rounded text-xs font-medium hover:bg-purple-700 transition-colors flex items-center justify-center gap-1"
-                    >
-                      <CreditCard className="w-3 h-3" />
-                      Pay
-                    </button>
-                  </div>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {allProperties.slice(0, visibleProperties).map((property) => (
+              <PropertyCard key={property.id} property={property} />
             ))}
           </div>
 
-          {allProperties.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-gray-400 mb-4">
-                <HomeIcon className="w-16 h-16 mx-auto" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-600 mb-2">No properties available</h3>
-              <p className="text-gray-500">Check back later for new rental listings</p>
+          {visibleProperties < allProperties.length && (
+            <div className="text-center mt-12">
+              <button
+                onClick={() => setVisibleProperties(prev => prev + 6)}
+                className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                Load More Properties
+              </button>
             </div>
           )}
         </div>
       </section>
 
-      {/* Property Details Modal */}
-      {showPropertyModal && selectedProperty && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">Property Details</h3>
-                <button
-                  onClick={() => setShowPropertyModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-              
-              <PropertyCard
-                {...selectedProperty}
-                isFavourite={favourites.includes(selectedProperty.id)}
-                toggleFavourite={() => toggleFavourite(selectedProperty.id)}
-                showViewButton={false}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* View Details Modal */}
+      {showViewModal && selectedProperty && (
+        <Dialog open={showViewModal} onClose={() => setShowViewModal(false)} className="fixed inset-0 z-50">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
+          <div className="fixed inset-0 flex justify-center items-center p-4">
+            <div className="relative w-full max-w-6xl max-h-[95vh] bg-white rounded-3xl shadow-2xl flex flex-col md:flex-row gap-4 overflow-hidden">
+              <button
+                onClick={() => setShowViewModal(false)}
+                className="absolute top-4 right-4 z-10 text-gray-500 hover:text-gray-800 text-2xl bg-white rounded-full p-2 shadow-lg"
+              >
+                ✕
+              </button>
 
-      {/* Booking Modal */}
-      {showBookingModal && selectedProperty && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Book Viewing</h3>
-                  <p className="text-gray-600">{selectedProperty.title}</p>
-                  <p className="text-sm text-gray-500">{selectedProperty.location}</p>
-                </div>
-                <button
-                  onClick={() => setShowBookingModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-
-              {!bookingSubmitted ? (
-                <form onSubmit={handleBookingSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={bookingForm.name}
-                        onChange={(e) => setBookingForm({...bookingForm, name: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter your full name"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={bookingForm.email}
-                        onChange={(e) => setBookingForm({...bookingForm, email: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter your email"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Phone Number *
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        value={bookingForm.phone}
-                        onChange={(e) => setBookingForm({...bookingForm, phone: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter your phone number"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Preferred Date *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={bookingForm.preferredDate}
-                        onChange={(e) => setBookingForm({...bookingForm, preferredDate: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        min={new Date().toISOString().split('T')[0]}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Preferred Time *
-                      </label>
-                      <select
-                        required
-                        value={bookingForm.preferredTime}
-                        onChange={(e) => setBookingForm({...bookingForm, preferredTime: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="">Select time</option>
-                        <option value="09:00">9:00 AM</option>
-                        <option value="10:00">10:00 AM</option>
-                        <option value="11:00">11:00 AM</option>
-                        <option value="12:00">12:00 PM</option>
-                        <option value="13:00">1:00 PM</option>
-                        <option value="14:00">2:00 PM</option>
-                        <option value="15:00">3:00 PM</option>
-                        <option value="16:00">4:00 PM</option>
-                        <option value="17:00">5:00 PM</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Additional Message
-                    </label>
-                    <textarea
-                      value={bookingForm.message}
-                      onChange={(e) => setBookingForm({...bookingForm, message: e.target.value})}
-                      rows={4}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Any specific requirements or questions..."
-                    />
-                  </div>
-
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 mb-2">Property Details</h4>
-                    <div className="text-sm text-blue-800">
-                      <p><strong>Price:</strong> {formatPrice(selectedProperty.price)}/month</p>
-                      <p><strong>Agent:</strong> {selectedProperty.agent_name}</p>
-                      <p><strong>Contact:</strong> {selectedProperty.agent_phone}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
+              {/* Left: Image Carousel */}
+              <div className="md:w-1/2 w-full h-[400px] md:h-auto relative">
+                <img
+                  src={selectedProperty.images?.[currentImageIndex] || selectedProperty.image}
+                  alt="property"
+                  className="w-full h-full object-cover"
+                />
+                {selectedProperty.images && selectedProperty.images.length > 1 && (
+                  <>
                     <button
-                      type="button"
-                      onClick={() => setShowBookingModal(false)}
-                      className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                      onClick={() => setCurrentImageIndex(prev => 
+                        prev === 0 ? selectedProperty.images.length - 1 : prev - 1
+                      )}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white shadow-lg p-2 rounded-full z-10"
                     >
-                      Cancel
+                      ←
                     </button>
                     <button
-                      type="submit"
-                      className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+                      onClick={() => setCurrentImageIndex(prev => 
+                        (prev + 1) % selectedProperty.images.length
+                      )}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white shadow-lg p-2 rounded-full z-10"
                     >
-                      <Send className="w-4 h-4" />
-                      Submit Booking
+                      →
                     </button>
-                  </div>
-                </form>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="w-8 h-8 text-green-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Booking Submitted!</h3>
-                  <p className="text-gray-600 mb-4">
-                    Your viewing request has been sent to the agent. They will contact you shortly to confirm the appointment.
-                  </p>
-                  <div className="bg-green-50 p-4 rounded-lg text-sm text-green-800">
-                    <p><strong>Reference:</strong> BK{Date.now().toString().slice(-6)}</p>
-                    <p><strong>Agent:</strong> {selectedProperty.agent_name}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Payment Modal */}
-      {showPaymentModal && selectedProperty && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Make Down Payment</h3>
-                  <p className="text-gray-600">{selectedProperty.title}</p>
-                  <p className="text-sm text-gray-500">Secure your rental with a down payment</p>
-                </div>
-                <button
-                  onClick={() => setShowPaymentModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
+                    <div className="absolute bottom-4 right-4 bg-black/60 text-white text-xs px-3 py-1 rounded-full">
+                      {currentImageIndex + 1} / {selectedProperty.images.length}
+                    </div>
+                  </>
+                )}
               </div>
 
-              {!paymentSubmitted ? (
-                <form onSubmit={handlePaymentSubmit} className="space-y-6">
-                  {/* Card Number */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Card Number *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        required
-                        value={paymentForm.cardNumber}
-                        onChange={(e) => setPaymentForm({...paymentForm, cardNumber: formatCardNumber(e.target.value)})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-12"
-                        placeholder="1234 5678 9012 3456"
-                        maxLength={19}
-                      />
-                      <CreditCard className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              {/* Right: Enhanced Content */}
+              <div className="md:w-1/2 w-full overflow-y-auto p-6 space-y-6">
+                {/* Header */}
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">{selectedProperty.title}</h2>
+                  <div className="flex items-center text-gray-600 mb-4">
+                    <MapPin className="w-5 h-5 mr-2" />
+                    <span>{selectedProperty.address || selectedProperty.location}</span>
+                  </div>
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <span className="text-3xl font-bold text-green-600">{formatPrice(selectedProperty.price)}</span>
+                    <span className="text-gray-500">/month</span>
+                    <span className="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-medium">For Rent</span>
+                    <span className="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full font-medium">{selectedProperty.type}</span>
+                  </div>
+                </div>
+
+                {/* Enhanced Features Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 px-4 py-3 rounded-xl shadow-sm flex items-center gap-3">
+                    <Bed className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <div className="font-semibold">{selectedProperty.bedrooms}</div>
+                      <div className="text-sm text-gray-600">Bedrooms</div>
                     </div>
                   </div>
-
-                  {/* Expiry and CVV */}
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-gray-50 px-4 py-3 rounded-xl shadow-sm flex items-center gap-3">
+                    <Bath className="w-5 h-5 text-blue-600" />
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Expiry Month *
-                      </label>
-                      <select
-                        required
-                        value={paymentForm.expiryMonth}
-                        onChange={(e) => setPaymentForm({...paymentForm, expiryMonth: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="">MM</option>
-                        {Array.from({length: 12}, (_, i) => (
-                          <option key={i+1} value={String(i+1).padStart(2, '0')}>
-                            {String(i+1).padStart(2, '0')}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="font-semibold">{selectedProperty.bathrooms}</div>
+                      <div className="text-sm text-gray-600">Bathrooms</div>
                     </div>
-
+                  </div>
+                  <div className="bg-gray-50 px-4 py-3 rounded-xl shadow-sm flex items-center gap-3">
+                    <Square className="w-5 h-5 text-blue-600" />
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Expiry Year *
-                      </label>
-                      <select
-                        required
-                        value={paymentForm.expiryYear}
-                        onChange={(e) => setPaymentForm({...paymentForm, expiryYear: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="">YYYY</option>
-                        {Array.from({length: 10}, (_, i) => (
-                          <option key={i} value={new Date().getFullYear() + i}>
-                            {new Date().getFullYear() + i}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="font-semibold">{selectedProperty.sqft}</div>
+                      <div className="text-sm text-gray-600">Sq Ft</div>
                     </div>
-
+                  </div>
+                  <div className="bg-gray-50 px-4 py-3 rounded-xl shadow-sm flex items-center gap-3">
+                    <Car className="w-5 h-5 text-blue-600" />
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        CVV *
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showCvv ? "text" : "password"}
-                          required
-                          value={paymentForm.cvv}
-                          onChange={(e) => setPaymentForm({...paymentForm, cvv: e.target.value.replace(/\D/g, '').slice(0, 4)})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
-                          placeholder="123"
-                          maxLength={4}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowCvv(!showCvv)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          {showCvv ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
+                      <div className="font-semibold">{selectedProperty.parking || 'N/A'}</div>
+                      <div className="text-sm text-gray-600">Parking</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Property Details */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Property Details</h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Year Built:</span>
+                        <span className="font-medium">{selectedProperty.year_built || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Furnished:</span>
+                        <span className="font-medium">{selectedProperty.furnished || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Pet Friendly:</span>
+                        <span className="font-medium">{selectedProperty.pet_friendly ? 'Yes' : 'No'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Rating:</span>
+                        <div className="flex items-center">
+                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                          <span className="font-medium ml-1">{selectedProperty.rating || 'N/A'}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Cardholder Name */}
+                  {/* Description */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cardholder Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={paymentForm.cardholderName}
-                      onChange={(e) => setPaymentForm({...paymentForm, cardholderName: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="John Doe"
-                    />
+                    <h3 className="font-semibold text-lg mb-2">Description</h3>
+                    <p className="text-gray-600 leading-relaxed">{selectedProperty.description}</p>
                   </div>
 
-                  {/* Email */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={paymentForm.email}
-                      onChange={(e) => setPaymentForm({...paymentForm, email: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="john@example.com"
-                    />
-                  </div>
+                  {/* Amenities */}
+                  {selectedProperty.amenities && selectedProperty.amenities.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Amenities</h3>
+                      <div className="grid grid-cols-2 gap-2">
+                        {selectedProperty.amenities.map((amenity, index) => (
+                          <div key={index} className="flex items-center text-sm text-gray-600">
+                            <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                            {amenity}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                  {/* Billing Address */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Billing Address *
-                    </label>
-                    <textarea
-                      required
-                      value={paymentForm.billingAddress}
-                      onChange={(e) => setPaymentForm({...paymentForm, billingAddress: e.target.value})}
-                      rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter your billing address"
-                    />
-                  </div>
-
-                  {/* Payment Summary */}
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 mb-2">Payment Summary</h4>
-                    <div className="text-sm text-blue-800">
-                      <p><strong>Property:</strong> {selectedProperty.title}</p>
-                      <p><strong>Monthly Rent:</strong> {formatPrice(selectedProperty.price)}</p>
-                      <p><strong>Down Payment:</strong> {formatPrice(Math.round(selectedProperty.price * 0.1))}</p>
+                  {/* Agent Information */}
+                  <div className="border-t pt-4">
+                    <h3 className="font-semibold text-lg mb-3">Contact Agent</h3>
+                    <div className="bg-blue-50 rounded-xl p-4">
+                      <div className="flex items-center mb-3">
+                        <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                          <Users className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">{selectedProperty.agent_name}</div>
+                          <div className="text-sm text-gray-600">Property Agent</div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Phone className="w-4 h-4 mr-2" />
+                          {selectedProperty.agent_phone}
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Mail className="w-4 h-4 mr-2" />
+                          {selectedProperty.agent_email}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Security Notice */}
-                  <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                    <Lock className="w-4 h-4 text-green-600" />
-                    <span>Your payment information is secure and encrypted</span>
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-3 pt-4">
                     <button
-                      type="button"
-                      onClick={() => setShowPaymentModal(false)}
-                      className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                      onClick={() => {
+                        setShowViewModal(false);
+                        openBookingModal(selectedProperty);
+                      }}
+                      className="bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium"
                     >
-                      Cancel
+                      Book Now
                     </button>
                     <button
-                      type="submit"
-                      className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
+                      onClick={() => {
+                        setShowViewModal(false);
+                        openPaymentModal(selectedProperty);
+                      }}
+                      className="bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors font-medium"
                     >
-                      <CreditCard className="w-4 h-4" />
-                      Process Payment
+                      Down Payment
                     </button>
-                  </div>
-                </form>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="w-8 h-8 text-green-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Payment Successful!</h3>
-                  <p className="text-gray-600 mb-4">
-                    Your down payment has been processed successfully. A confirmation email has been sent to your email address.
-                  </p>
-                  <div className="bg-green-50 p-4 rounded-lg text-sm text-green-800">
-                    <p><strong>Transaction ID:</strong> TXN{Date.now().toString().slice(-8)}</p>
-                    <p><strong>Amount:</strong> {formatPrice(Math.round(selectedProperty.price * 0.1))}</p>
-                    <p><strong>Card:</strong> ****{paymentForm.cardNumber.slice(-4)}</p>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </Dialog>
+      )}
+
+      {/* Booking Modal */}
+      {showBookingModal && selectedProperty && (
+        <Dialog open={showBookingModal} onClose={() => setShowBookingModal(false)} className="fixed inset-0 z-50">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
+          <div className="fixed inset-0 flex justify-center items-center p-4">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+              {bookingSuccess ? (
+                <div className="text-center">
+                  <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Booking Request Sent!</h3>
+                  <p className="text-gray-600">We'll contact you within 24 hours to confirm your booking.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900">Book Property</h3>
+                    <button
+                      onClick={() => setShowBookingModal(false)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-semibold">{selectedProperty.title}</h4>
+                    <p className="text-gray-600">{selectedProperty.location}</p>
+                    <p className="text-green-600 font-bold">{formatPrice(selectedProperty.price)}/month</p>
+                  </div>
+
+                  <form onSubmit={handleBookingSubmit} className="space-y-4">
+                    <input
+                      type="text"
+                      placeholder="Full Name"
+                      value={bookingForm.fullName}
+                      onChange={(e) => setBookingForm({...bookingForm, fullName: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      required
+                    />
+                    
+                    <input
+                      type="email"
+                      placeholder="Email Address"
+                      value={bookingForm.email}
+                      onChange={(e) => setBookingForm({...bookingForm, email: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      required
+                    />
+                    
+                    <input
+                      type="tel"
+                      placeholder="Phone Number"
+                      value={bookingForm.phone}
+                      onChange={(e) => setBookingForm({...bookingForm, phone: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      required
+                    />
+                    
+                    <input
+                      type="date"
+                      placeholder="Preferred Move-in Date"
+                      value={bookingForm.moveInDate}
+                      onChange={(e) => setBookingForm({...bookingForm, moveInDate: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      required
+                    />
+                    
+                    <textarea
+                      placeholder="Additional Message (Optional)"
+                      value={bookingForm.message}
+                      onChange={(e) => setBookingForm({...bookingForm, message: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent h-24 resize-none"
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting ? 'Sending...' : 'Send Booking Request'}
+                    </button>
+                  </form>
+                </>
               )}
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
-      {/* CTA Section */}
-      <section className="py-20 bg-blue-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">Ready to Find Your Rental Home?</h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Connect with our agents instantly via email or WhatsApp, or book a viewing online.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/AIHelp">
-              <button className="bg-white text-blue-600 px-8 py-3 rounded-lg hover:bg-gray-100 transition-colors font-medium">
-                Get AI Assistance
-              </button>
-            </Link>
-            <button className="border-2 border-white text-white px-8 py-3 rounded-lg hover:bg-white hover:text-blue-600 transition-colors font-medium">
-              Contact Support
-            </button>
+      {/* Payment Modal with Card Design */}
+      {showPaymentModal && selectedProperty && (
+        <Dialog open={showPaymentModal} onClose={() => setShowPaymentModal(false)} className="fixed inset-0 z-50">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
+          <div className="fixed inset-0 flex justify-center items-center p-4">
+            <div className="bg-white rounded-2xl p-8 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+              {paymentSuccess ? (
+                <div className="text-center">
+                  <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h3>
+                  <p className="text-gray-600 mb-4">Your down payment has been processed successfully.</p>
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <p className="text-green-800">
+                      Amount: <span className="font-bold">{formatPrice(selectedProperty.price * 0.1)}</span>
+                    </p>
+                    <p className="text-green-800">
+                      Transaction ID: TXN{Date.now()}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900">Down Payment</h3>
+                    <button
+                      onClick={() => setShowPaymentModal(false)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Left: Card Preview */}
+                    <div className="space-y-6">
+                      <div className="relative">
+                        {/* Credit Card Design */}
+                        <div className="w-full h-56 bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 rounded-2xl shadow-2xl p-6 text-white relative overflow-hidden">
+                          {/* Card Background Pattern */}
+                          <div className="absolute inset-0 opacity-20">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-16 translate-x-16"></div>
+                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full translate-y-12 -translate-x-12"></div>
+                          </div>
+                          
+                          {/* Card Content */}
+                          <div className="relative z-10 h-full flex flex-col justify-between">
+                            <div className="flex justify-between items-start">
+                              <div className="text-sm font-medium opacity-80">DEBIT CARD</div>
+                              <div className="text-right">
+                                <div className="text-xs opacity-80">BANK</div>
+                                <div className="font-bold">{getCardBrand(paymentForm.cardNumber)}</div>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-4">
+                              <div className="text-2xl font-mono tracking-wider">
+                                {paymentForm.cardNumber || '•••• •••• •••• ••••'}
+                              </div>
+                              
+                              <div className="flex justify-between items-end">
+                                <div>
+                                  <div className="text-xs opacity-80">CARDHOLDER NAME</div>
+                                  <div className="font-medium text-sm">
+                                    {paymentForm.cardholderName || 'YOUR NAME'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-xs opacity-80">EXPIRES</div>
+                                  <div className="font-medium">
+                                    {paymentForm.expiryMonth && paymentForm.expiryYear 
+                                      ? `${paymentForm.expiryMonth}/${paymentForm.expiryYear.slice(-2)}`
+                                      : 'MM/YY'
+                                    }
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Payment Summary */}
+                      <div className="bg-gray-50 p-6 rounded-xl">
+                        <h4 className="font-semibold mb-4">Payment Summary</h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span>Property:</span>
+                            <span className="font-medium">{selectedProperty.title}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Monthly Rent:</span>
+                            <span>{formatPrice(selectedProperty.price)}</span>
+                          </div>
+                          <div className="flex justify-between text-lg font-bold border-t pt-2">
+                            <span>Down Payment (10%):</span>
+                            <span className="text-purple-600">{formatPrice(selectedProperty.price * 0.1)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Payment Form */}
+                    <div>
+                      <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Card Number</label>
+                          <input
+                            type="text"
+                            placeholder="1234 5678 9012 3456"
+                            value={paymentForm.cardNumber}
+                            onChange={(e) => setPaymentForm({
+                              ...paymentForm, 
+                              cardNumber: formatCardNumber(e.target.value)
+                            })}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono"
+                            maxLength="19"
+                            required
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
+                            <select
+                              value={paymentForm.expiryMonth}
+                              onChange={(e) => setPaymentForm({...paymentForm, expiryMonth: e.target.value})}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              required
+                            >
+                              <option value="">MM</option>
+                              {Array.from({length: 12}, (_, i) => (
+                                <option key={i+1} value={String(i+1).padStart(2, '0')}>
+                                  {String(i+1).padStart(2, '0')}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                            <select
+                              value={paymentForm.expiryYear}
+                              onChange={(e) => setPaymentForm({...paymentForm, expiryYear: e.target.value})}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              required
+                            >
+                              <option value="">YYYY</option>
+                              {Array.from({length: 10}, (_, i) => (
+                                <option key={i} value={new Date().getFullYear() + i}>
+                                  {new Date().getFullYear() + i}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">CVV</label>
+                            <div className="relative">
+                              <input
+                                type={showCvv ? "text" : "password"}
+                                placeholder="123"
+                                value={paymentForm.cvv}
+                                onChange={(e) => setPaymentForm({...paymentForm, cvv: e.target.value.replace(/\D/g, '').slice(0, 4)})}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10"
+                                required
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowCvv(!showCvv)}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                              >
+                                {showCvv ? '🙈' : '👁️'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Cardholder Name</label>
+                          <input
+                            type="text"
+                            placeholder="John Doe"
+                            value={paymentForm.cardholderName}
+                            onChange={(e) => setPaymentForm({...paymentForm, cardholderName: e.target.value})}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                          <input
+                            type="email"
+                            placeholder="john@example.com"
+                            value={paymentForm.email}
+                            onChange={(e) => setPaymentForm({...paymentForm, email: e.target.value})}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Billing Address</label>
+                          <textarea
+                            placeholder="123 Main St, City, Country"
+                            value={paymentForm.billingAddress}
+                            onChange={(e) => setPaymentForm({...paymentForm, billingAddress: e.target.value})}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent h-20 resize-none"
+                            required
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                          <Shield className="w-4 h-4 text-blue-600" />
+                          <span>Your payment information is encrypted and secure</span>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="w-full bg-purple-600 text-white py-4 px-4 rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="w-4 h-4" />
+                              Pay {formatPrice(selectedProperty.price * 0.1)}
+                            </>
+                          )}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </Dialog>
+      )}
 
       {/* Footer */}
       <footer className="bg-gray-900 py-12">
@@ -1102,13 +1050,13 @@ const Rent = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
                   <HomeIcon className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-xl font-bold text-white">Wealth Home</span>
               </div>
               <p className="text-gray-400">
-                Your trusted partner for finding the perfect rental property in Bahrain.
+                Your trusted partner for premium rental properties in Bahrain.
               </p>
             </div>
 
@@ -1123,12 +1071,12 @@ const Rent = () => {
             </div>
 
             <div>
-              <h3 className="text-white font-semibold mb-4">Popular Areas</h3>
+              <h3 className="text-white font-semibold mb-4">Locations</h3>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="#" className="hover:text-white">Manama</a></li>
                 <li><a href="#" className="hover:text-white">Riffa</a></li>
+                <li><a href="#" className="hover:text-white">Muharraq</a></li>
                 <li><a href="#" className="hover:text-white">Amwaj Islands</a></li>
-                <li><a href="#" className="hover:text-white">Seef</a></li>
               </ul>
             </div>
 
@@ -1136,7 +1084,7 @@ const Rent = () => {
               <h3 className="text-white font-semibold mb-4">Contact</h3>
               <ul className="space-y-2 text-gray-400">
                 <li>+973 1234 5678</li>
-                <li>rentals@wealthhome.com</li>
+                <li>rent@wealthhome.com</li>
                 <li>Manama, Kingdom of Bahrain</li>
               </ul>
             </div>
