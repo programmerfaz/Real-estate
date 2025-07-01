@@ -6,6 +6,7 @@ import Buy from "./pages/Buy";
 import Favorites from "./pages/Favourites";
 import AIHelp from "./pages/AIHelp";
 import Rent from "./pages/Rent";
+import About from "./pages/About";
 
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
       <Route path="/favourites" element={<Favorites />} />
       <Route path="/AIHelp" element={<AIHelp />} />
       <Route path="/rent" element={<Rent />} />
+      <Route path="/about" element={<About />} />
       {/* Catch-all route to redirect to home if no other route matches */}
     </Routes>
   );

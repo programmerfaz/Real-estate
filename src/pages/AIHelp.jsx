@@ -518,12 +518,7 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-      {/* Animated Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse delay-2000"></div>
-      </div>
+      
 
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-40">
@@ -614,7 +609,7 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center mb-8">
             <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center mr-6 animate-pulse">
+              <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center mr-6 animate-pulse">
                 <Brain className="w-10 h-10 text-white" />
               </div>
               <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full flex items-center justify-center">
@@ -624,7 +619,7 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
             <div className="text-left">
               <h1 className="text-5xl md:text-6xl font-bold text-white mb-2">
                 AI Property
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-400">
                   Intelligence
                 </span>
               </h1>
