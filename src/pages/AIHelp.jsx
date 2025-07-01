@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  MessageCircle, 
-  Send, 
-  Bot, 
-  User, 
-  Home as HomeIcon, 
-  TrendingUp, 
-  MapPin, 
-  DollarSign, 
-  Bed, 
-  Bath, 
-  Square, 
-  Star, 
-  Lightbulb, 
-  BarChart3, 
-  Target, 
-  Sparkles, 
-  LogOut, 
-  Menu, 
+import {
+  MessageCircle,
+  Send,
+  Bot,
+  User,
+  Home as HomeIcon,
+  TrendingUp,
+  MapPin,
+  DollarSign,
+  Bed,
+  Bath,
+  Square,
+  Star,
+  Lightbulb,
+  BarChart3,
+  Target,
+  Sparkles,
+  LogOut,
+  Menu,
   X,
   Loader2,
   ThumbsUp,
@@ -47,7 +47,8 @@ import {
   ChevronRight,
   ArrowRight,
   Play,
-  Pause
+  Pause,
+  Maximize2
 } from 'lucide-react';
 import { Link } from "react-router-dom";
 import { supabase } from "../supabase";
@@ -75,6 +76,8 @@ const AIHelp = () => {
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const navigate = useNavigate();
+
+  const chatSectionRef = useRef(null);
 
   // OpenAI API configuration
   const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || 'your-openai-api-key-here';
@@ -179,7 +182,7 @@ Please specify your property requirements for analysis.`
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ 
+      messagesEndRef.current.scrollIntoView({
         behavior: "smooth",
         block: "end"
       });
@@ -206,7 +209,7 @@ Please specify your property requirements for analysis.`
     const highRated = [...properties].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 3);
     const affordable = [...properties].sort((a, b) => (a.price || 0) - (b.price || 0)).slice(0, 3);
     const luxury = [...properties].sort((a, b) => (b.price || 0) - (a.price || 0)).slice(0, 3);
-    
+
     setRecommendations([
       { title: 'AI Featured Picks', properties: featured, icon: Sparkles, color: 'from-purple-500 to-pink-500' },
       { title: 'Top Rated Properties', properties: highRated, icon: Star, color: 'from-yellow-500 to-orange-500' },
@@ -292,13 +295,13 @@ Please specify your property requirements for analysis.`
 
     // Features filtering
     if (query.includes('pool') || query.includes('swimming')) {
-      filteredProperties = filteredProperties.filter(p => 
+      filteredProperties = filteredProperties.filter(p =>
         p.amenities?.some(amenity => amenity.toLowerCase().includes('pool'))
       );
     }
 
     if (query.includes('beach') || query.includes('waterfront')) {
-      filteredProperties = filteredProperties.filter(p => 
+      filteredProperties = filteredProperties.filter(p =>
         p.amenities?.some(amenity => amenity.toLowerCase().includes('beach')) ||
         p.title.toLowerCase().includes('waterfront') ||
         p.description?.toLowerCase().includes('beach')
@@ -310,22 +313,22 @@ Please specify your property requirements for analysis.`
 
   const callOpenAI = async (userMessage, context = '') => {
     setAiThinking(true);
-    
+
     // Check if user is asking for property recommendations
     const query = userMessage.toLowerCase();
-    const isPropertySearch = query.includes('property') || query.includes('properties') || 
-                           query.includes('house') || query.includes('home') || 
-                           query.includes('villa') || query.includes('apartment') ||
-                           query.includes('find') || query.includes('show') ||
-                           query.includes('best') || query.includes('recommend');
+    const isPropertySearch = query.includes('property') || query.includes('properties') ||
+      query.includes('house') || query.includes('home') ||
+      query.includes('villa') || query.includes('apartment') ||
+      query.includes('find') || query.includes('show') ||
+      query.includes('best') || query.includes('recommend');
 
     if (isPropertySearch) {
       const matchedProperties = getPropertyRecommendations(userMessage);
-      
+
       if (matchedProperties.length > 0) {
         setAiThinking(false);
         let response = `Here are the best properties I found based on your criteria:\n\n`;
-        
+
         matchedProperties.forEach((property, index) => {
           response += `${index + 1}. **${property.title}**\n`;
           response += `   📍 ${property.location}\n`;
@@ -335,7 +338,7 @@ Please specify your property requirements for analysis.`
         });
 
         response += `These properties match your requirements perfectly! You can view more details by clicking on any property card in our recommendations section.`;
-        
+
         return response;
       }
     }
@@ -415,13 +418,13 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
     // Simulate typing delay
     setTimeout(() => setIsTyping(false), 1500);
 
-    const propertiesContext = allProperties.slice(0, 10).map(p => 
+    const propertiesContext = allProperties.slice(0, 10).map(p =>
       `${p.title} in ${p.location} - ${p.bedrooms}BR/${p.bathrooms}BA - $${p.price?.toLocaleString() || 'N/A'} - Type: ${p.type || 'N/A'}`
     ).join('; ');
 
     try {
       const aiResponse = await callOpenAI(inputMessage, propertiesContext);
-      
+
       const botMessage = {
         id: Date.now() + 1,
         type: 'bot',
@@ -452,8 +455,8 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
   };
 
   const smartQuestions = [
-    { 
-      category: "Property Search", 
+    {
+      category: "Property Search",
       questions: [
         "Show me luxury waterfront properties in Manama",
         "Find 3-bedroom family homes under $300k",
@@ -461,8 +464,8 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
         "Properties with swimming pools and gardens"
       ]
     },
-    { 
-      category: "Market Analysis", 
+    {
+      category: "Market Analysis",
       questions: [
         "What are current market trends in Bahrain?",
         "Best areas for property investment",
@@ -470,8 +473,8 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
         "ROI analysis for rental properties"
       ]
     },
-    { 
-      category: "Neighborhood Insights", 
+    {
+      category: "Neighborhood Insights",
       questions: [
         "Compare Riffa vs Manama for families",
         "Best areas near international schools",
@@ -496,9 +499,22 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
 
   const Crown = ({ className }) => (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M5 16L3 6l5.5 4L12 4l3.5 6L21 6l-2 10H5zm2.7-2h8.6l.9-4.4L14 12l-2-4-2 4-3.2-2.4L7.7 14z"/>
+      <path d="M5 16L3 6l5.5 4L12 4l3.5 6L21 6l-2 10H5zm2.7-2h8.6l.9-4.4L14 12l-2-4-2 4-3.2-2.4L7.7 14z" />
     </svg>
   );
+
+  const toggleFullscreen = () => {
+    const elem = chatSectionRef.current;
+    if (!document.fullscreenElement) {
+      elem?.requestFullscreen().catch((err) => {
+        console.error(`Error trying fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
@@ -510,62 +526,88 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
       </div>
 
       {/* Header */}
-      <header className="relative bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0 z-40">
+      <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
+            {/* Logo */}
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                 <HomeIcon className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-white">Wealth Home</span>
+              <span className="text-xl font-bold text-gray-900">Wealth Home</span>
             </div>
 
+            {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-8">
-              <a href="./Home" className="text-white/70 hover:text-white font-medium transition-colors">Properties</a>
-              <a href="./Buy" className="text-white/70 hover:text-white font-medium transition-colors">Buy</a>
-              <a href="./Rent" className="text-white/70 hover:text-white font-medium transition-colors">Rent</a>
-              <a href="./AIHelp" className="text-white font-medium border-b-2 border-blue-400 pb-1">AI Help</a>
-              <a href="./About" className="text-white/70 hover:text-white font-medium transition-colors">About</a>
+              <a href="./Home" className="text-gray-600 hover:text-blue-600 font-medium">Properties</a>
+              <a href="./Buy" className="text-gray-600 hover:text-blue-600 font-medium">Buy</a>
+              <a href="./Rent" className="text-gray-600 hover:text-blue-600 font-medium">Rent</a>
+              <a href="./AIHelp" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">AI Help</a>
+              <a href="./About" className="text-gray-600 hover:text-blue-600 font-medium">About</a>
             </nav>
 
+            {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden text-white focus:outline-none"
+              className="md:hidden text-gray-700 focus:outline-none"
             >
               {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
 
+            {/* Desktop Actions */}
             <div className="hidden md:flex items-center gap-4">
               <Link to="/Favourites">
-                <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105">
+                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                   My Favourites
                 </button>
               </Link>
               {userEmail ? (
                 <>
-                  <span className="text-sm text-white/70">Welcome, {userEmail.split('@')[0]}</span>
+                  <span className="text-sm text-gray-600">Welcome, {userEmail.split('@')[0]}</span>
                   <LogOut
                     onClick={handleLogout}
-                    className="w-5 h-5 text-red-400 hover:text-red-300 cursor-pointer transition-colors"
+                    className="w-5 h-5 text-red-600 hover:text-red-800 cursor-pointer"
                   />
                 </>
               ) : (
-                <button className="text-white/70 hover:text-white font-medium transition-colors">Sign In</button>
+                <button className="text-gray-600 hover:text-blue-600 font-medium">Sign In</button>
               )}
             </div>
           </div>
 
+          {/* Mobile Dropdown Menu */}
           {menuOpen && (
-            <div className="md:hidden bg-white/10 backdrop-blur-md border-t border-white/20 pt-4 pb-4 space-y-2">
-              <a href="./Home" className="block px-4 text-white/70 hover:text-white font-medium">Properties</a>
-              <a href="./Buy" className="block px-4 text-white/70 hover:text-white font-medium">Buy</a>
-              <a href="./Rent" className="block px-4 text-white/70 hover:text-white font-medium">Rent</a>
-              <a href="./AIHelp" className="block px-4 text-white font-medium">AI Help</a>
-              <a href="./About" className="block px-4 text-white/70 hover:text-white font-medium">About</a>
+            <div className="md:hidden bg-white border-t border-gray-200 pt-4 pb-4 space-y-2">
+              <a href="./Home" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Properties</a>
+              <a href="./Buy" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Buy</a>
+              <a href="./Rent" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Rent</a>
+              <a href="./AIHelp" className="block px-4 text-blue-600 font-medium">AI Help</a>
+              <a href="./About" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">About</a>
+              <Link to="/Favourites">
+                <div className="px-4">
+                  <button className="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    My Favourites
+                  </button>
+                </div>
+              </Link>
+              {userEmail ? (
+                <div className="px-4 flex items-center justify-between mt-2">
+                  <span className="text-sm text-gray-600">Welcome, {userEmail.split('@')[0]}</span>
+                  <LogOut
+                    onClick={handleLogout}
+                    className="w-5 h-5 text-red-600 hover:text-red-800 cursor-pointer"
+                  />
+                </div>
+              ) : (
+                <div className="px-4">
+                  <button className="text-gray-600 hover:text-blue-600 font-medium">Sign In</button>
+                </div>
+              )}
             </div>
           )}
         </div>
       </header>
+
 
       {/* Hero Section */}
       <section className="relative py-20">
@@ -589,9 +631,9 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
               <p className="text-blue-200 text-lg">Powered by Advanced Machine Learning</p>
             </div>
           </div>
-          
+
           <p className="text-xl text-white/80 mb-12 max-w-4xl mx-auto leading-relaxed">
-            Experience the future of real estate with our cutting-edge AI assistant. 
+            Experience the future of real estate with our cutting-edge AI assistant.
             Get personalized recommendations, market insights, and expert guidance powered by advanced algorithms.
           </p>
 
@@ -606,11 +648,10 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                 <button
                   key={key}
                   onClick={() => setAiPersonality(key)}
-                  className={`flex items-center px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
-                    aiPersonality === key 
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105' 
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
-                  }`}
+                  className={`flex items-center px-4 py-2 rounded-xl font-medium transition-all duration-300 ${aiPersonality === key
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
                 >
                   <Icon className="w-4 h-4 mr-2" />
                   {label}
@@ -633,11 +674,10 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex items-center px-6 py-4 rounded-xl font-medium transition-all duration-300 ${
-                activeTab === key 
-                  ? `bg-gradient-to-r ${gradient} text-white shadow-lg transform scale-105` 
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`}
+              className={`flex items-center px-6 py-4 rounded-xl font-medium transition-all duration-300 ${activeTab === key
+                ? `bg-gradient-to-r ${gradient} text-white shadow-lg transform scale-105`
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+                }`}
             >
               <Icon className="w-5 h-5 mr-2" />
               {label}
@@ -650,7 +690,11 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Enhanced Chat Interface */}
             <div className="lg:col-span-3">
-              <div className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border border-white/20 flex flex-col h-[70vh]">
+              <div
+                ref={chatSectionRef}
+                className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border border-white/20 flex flex-col h-[70vh]"
+              >
+
                 {/* Chat Header */}
                 <div className="bg-gradient-to-r from-blue-600/80 to-purple-600/80 backdrop-blur-md p-6 border-b border-white/20 flex-shrink-0">
                   <div className="flex items-center justify-between">
@@ -673,26 +717,20 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setVoiceEnabled(!voiceEnabled)}
-                        className={`p-2 rounded-lg transition-colors ${voiceEnabled ? 'bg-green-500' : 'bg-white/20'}`}
-                      >
-                        {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                      </button>
-                      <button
-                        onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                        onClick={toggleFullscreen}
                         className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
                       >
-                        <Settings className="w-4 h-4" />
+                        <Maximize2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 </div>
 
                 {/* Messages Container - Fixed Height with Scroll */}
-                <div 
+                <div
                   ref={chatContainerRef}
                   className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-transparent to-black/10 min-h-0"
                   style={{ maxHeight: 'calc(70vh - 200px)' }}
@@ -702,30 +740,26 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                       key={message.id}
                       className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`flex items-start max-w-xs lg:max-w-md ${
-                        message.type === 'user' ? 'flex-row-reverse' : 'flex-row'
-                      }`}>
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          message.type === 'user' 
-                            ? 'bg-gradient-to-r from-blue-500 to-purple-600 ml-3' 
-                            : 'bg-gradient-to-r from-gray-600 to-gray-700 mr-3'
+                      <div className={`flex items-start max-w-xs lg:max-w-md ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'
                         }`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${message.type === 'user'
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-600 ml-3'
+                          : 'bg-gradient-to-r from-gray-600 to-gray-700 mr-3'
+                          }`}>
                           {message.type === 'user' ? (
                             <User className="w-5 h-5 text-white" />
                           ) : (
                             <Bot className="w-5 h-5 text-white" />
                           )}
                         </div>
-                        <div className={`px-6 py-4 rounded-2xl backdrop-blur-md border ${
-                          message.type === 'user'
-                            ? 'bg-gradient-to-r from-blue-500/80 to-purple-600/80 text-white border-blue-400/30'
-                            : 'bg-white/10 text-white border-white/20'
-                        }`}>
+                        <div className={`px-6 py-4 rounded-2xl backdrop-blur-md border ${message.type === 'user'
+                          ? 'bg-gradient-to-r from-blue-500/80 to-purple-600/80 text-white border-blue-400/30'
+                          : 'bg-white/10 text-white border-white/20'
+                          }`}>
                           <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
                           <div className="flex items-center justify-between mt-3">
-                            <p className={`text-xs ${
-                              message.type === 'user' ? 'text-blue-100' : 'text-white/60'
-                            }`}>
+                            <p className={`text-xs ${message.type === 'user' ? 'text-blue-100' : 'text-white/60'
+                              }`}>
                               {message.timestamp.toLocaleTimeString()}
                             </p>
                             {message.type === 'bot' && (
@@ -743,7 +777,7 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                       </div>
                     </div>
                   ))}
-                  
+
                   {(isLoading || isTyping || aiThinking) && (
                     <div className="flex justify-start">
                       <div className="flex items-start">
@@ -781,16 +815,15 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                         rows="2"
                         style={{ minHeight: '60px' }}
                       />
-                      <div className="absolute right-3 bottom-3 flex items-center gap-2">
+                      {/* <div className="absolute right-3 bottom-3 flex items-center gap-2">
                         <button
                           onClick={() => setIsListening(!isListening)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            isListening ? 'bg-red-500' : 'bg-white/20 hover:bg-white/30'
-                          }`}
+                          className={`p-2 rounded-lg transition-colors ${isListening ? 'bg-red-500' : 'bg-white/20 hover:bg-white/30'
+                            }`}
                         >
                           {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                         </button>
-                      </div>
+                      </div> */}
                     </div>
                     <button
                       onClick={handleSendMessage}
@@ -962,7 +995,7 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                     const avgPrice = locationProps.reduce((sum, p) => sum + (p.price || 0), 0) / locationProps.length;
                     const maxPrice = Math.max(...allProperties.map(p => p.price || 0));
                     const percentage = maxPrice > 0 ? (avgPrice / maxPrice) * 100 : 0;
-                    
+
                     return (
                       <div key={index} className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors">
                         <div className="flex justify-between items-center mb-3">
@@ -970,7 +1003,7 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
                           <span className="text-blue-400 font-semibold">${Math.round(avgPrice / 1000)}K</span>
                         </div>
                         <div className="w-full bg-white/20 rounded-full h-3">
-                          <div 
+                          <div
                             className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out"
                             style={{ width: `${percentage}%` }}
                           ></div>
@@ -1028,7 +1061,7 @@ You work for Wealth Home, a premium property platform in Bahrain. Help users fin
 
 const Heart = ({ className }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
   </svg>
 );
 

@@ -7,7 +7,7 @@ import { supabase } from "../supabase";
 import { useNavigate } from 'react-router-dom';
 import { auth } from "../firebase";
 
-const formatPrice = (price) => `$${price.toLocaleString()}`;
+const formatPrice = (price) => `${price.toLocaleString()} BHD`;
 
 const Buy = ({ viewMode }) => {
     const [userEmail, setUserEmail] = useState(null);

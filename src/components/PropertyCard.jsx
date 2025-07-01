@@ -181,7 +181,7 @@ const PropertyCard = ({
                   <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
                   <p className="text-sm text-gray-500 mt-1">📍 {address}</p>
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
-                    <span className="text-xl font-bold text-gray-800">${price.toLocaleString()}</span>
+                    <span className="text-xl font-bold text-gray-800">{price.toLocaleString()} BHD</span>
                     <span className="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-medium">For Sale</span>
                     <span className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full font-medium">{type}</span>
                   </div>

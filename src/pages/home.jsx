@@ -89,7 +89,7 @@ const Home = () => {
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-8">
-              <a href="./Home" className="text-gray-600 hover:text-blue-600 font-medium">Properties</a>
+              <a href="./Home" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Properties</a>
               <a href="./Buy" className="text-gray-600 hover:text-blue-600 font-medium">Buy</a>
               <a href="./Rent" className="text-gray-600 hover:text-blue-600 font-medium">Rent</a>
               <a href="./AIHelp" className="text-gray-600 hover:text-blue-600 font-medium">AI Help</a>
@@ -128,7 +128,7 @@ const Home = () => {
           {/* Mobile dropdown */}
           {menuOpen && (
             <div className="md:hidden bg-white border-t border-gray-200 pt-4 pb-4 space-y-2">
-              <a href="./Home" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Properties</a>
+              <a href="./Home" className="block px-4 text-blue-600 font-medium">Properties</a>
               <a href="./Buy" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Buy</a>
               <a href="./Rent" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Rent</a>
               <a href="./AIHelp" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">AI Help</a>

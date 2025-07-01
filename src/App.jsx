@@ -2,9 +2,10 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Signup from "./pages/signup";
 import Login from "./pages/login";
 import Home from "./pages/home";
-import Buy from "./pages/buy";
+import Buy from "./pages/Buy";
 import Favorites from "./pages/Favourites";
 import AIHelp from "./pages/AIHelp";
+import Rent from "./pages/Rent";
 
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
       <Route path="/buy" element={<Buy />} />
       <Route path="/favourites" element={<Favorites />} />
       <Route path="/AIHelp" element={<AIHelp />} />
+      <Route path="/rent" element={<Rent />} />
       {/* Catch-all route to redirect to home if no other route matches */}
     </Routes>
   );
