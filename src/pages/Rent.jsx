@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MapPin, Bed, Bath, Square, Car, Star, TrendingUp, Award, Users, LogOut, Menu, Home as HomeIcon, Filter, X, Search, Grid3X3, List, Calendar, CreditCard, User, Mail, Phone, MapPinIcon, CheckCircle } from "lucide-react";
+import { MapPin, Bed, Bath, Square, Car, Star, TrendingUp, Award, Users, LogOut, Menu, Home as HomeIcon, Filter, X, Search, Grid3X3, List, Calendar, CreditCard, User, Mail, Phone, MapPinIcon, CheckCircle, Camera, Eye } from "lucide-react";
 import SearchBar from '../components/SearchBar';
 import PropertyCard from "../components/PropertyCard";
 import { Link } from "react-router-dom";
@@ -16,6 +16,11 @@ const Rent = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [viewType, setViewType] = useState('grid');
   const [isLoading, setIsLoading] = useState(false);
+
+  // View Details modal states
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedPropertyForDetails, setSelectedPropertyForDetails] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Booking modal states
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -75,11 +80,11 @@ const Rent = () => {
 
   const formatPrice = (price) => `${price.toLocaleString()} BHD`;
 
-  // Enhanced property fetching with search and sort
+  // Enhanced property fetching with search and sort - Updated to use rentproperties table
   useEffect(() => {
     const fetchProperties = async () => {
       setIsLoading(true);
-      let query = supabase.from("properties").select("*");
+      let query = supabase.from("rentproperties").select("*");
 
       // Search functionality
       if (searchQuery.trim()) {
@@ -211,6 +216,13 @@ const Rent = () => {
     if (selectedAmenities.length > 0) count++;
     if (searchQuery.trim()) count++;
     return count;
+  };
+
+  // Handle view details
+  const handleViewDetails = (property) => {
+    setSelectedPropertyForDetails(property);
+    setCurrentImageIndex(0);
+    setShowDetailsModal(true);
   };
 
   // Handle booking
@@ -790,8 +802,8 @@ const Rent = () => {
 
                       {/* Image count */}
                       <div className="absolute bottom-4 right-4 bg-black/50 text-white px-2 py-1 rounded-lg text-sm flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        Available
+                        <Camera className="w-3 h-3" />
+                        {property.images ? property.images.length + 1 : 1}
                       </div>
                     </div>
 
@@ -821,7 +833,7 @@ const Rent = () => {
                         <div className="text-sm">{property.sqft} sq ft</div>
                       </div>
 
-                      {/* Price + Buttons */}
+                      {/* Price */}
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <span className="text-2xl font-bold text-gray-900">
@@ -831,19 +843,26 @@ const Rent = () => {
                         </div>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex gap-2">
+                      {/* Action Buttons - Improved alignment */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          onClick={() => handleViewDetails(property)}
+                          className="bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors font-medium text-sm flex items-center justify-center gap-1"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View
+                        </button>
                         <button
                           onClick={() => handleBookNow(property)}
-                          className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                          className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
                         >
                           Book Now
                         </button>
                         <button
                           onClick={() => handleMakePayment(property)}
-                          className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                          className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
                         >
-                          Make Payment
+                          Payment
                         </button>
                       </div>
                     </div>
@@ -870,6 +889,135 @@ const Rent = () => {
           </div>
         </main>
       </div>
+
+      {/* View Details Modal */}
+      {showDetailsModal && selectedPropertyForDetails && (
+        <Dialog open={showDetailsModal} onClose={() => setShowDetailsModal(false)} className="fixed inset-0 z-50">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
+          <div className="fixed inset-0 flex justify-center items-center p-4">
+            <div className="relative w-full max-w-5xl max-h-[95vh] bg-white rounded-3xl shadow-2xl flex flex-col md:flex-row gap-4 overflow-hidden">
+              
+              {/* Close Button */}
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="absolute top-4 right-4 z-10 text-gray-500 hover:text-gray-800 text-2xl"
+              >
+                ✕
+              </button>
+
+              {/* Left: Image Carousel */}
+              <div className="md:w-1/2 w-full h-[400px] relative">
+                <img
+                  src={selectedPropertyForDetails.images && selectedPropertyForDetails.images.length > 0 
+                    ? selectedPropertyForDetails.images[currentImageIndex] 
+                    : selectedPropertyForDetails.image}
+                  alt="property"
+                  className="w-full h-full object-cover rounded-l-3xl"
+                />
+                {selectedPropertyForDetails.images && selectedPropertyForDetails.images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setCurrentImageIndex((prev) => 
+                        prev === 0 ? selectedPropertyForDetails.images.length - 1 : prev - 1
+                      )}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-white shadow p-1 rounded-full z-10"
+                    >
+                      ←
+                    </button>
+                    <button
+                      onClick={() => setCurrentImageIndex((prev) => 
+                        (prev + 1) % selectedPropertyForDetails.images.length
+                      )}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-white shadow p-1 rounded-full z-10"
+                    >
+                      →
+                    </button>
+                    <div className="absolute bottom-2 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded z-10">
+                      {currentImageIndex + 1} / {selectedPropertyForDetails.images.length}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Right: Content */}
+              <div className="md:w-1/2 w-full overflow-y-auto p-5 space-y-4">
+                {/* Title & Address */}
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">{selectedPropertyForDetails.title}</h2>
+                  <p className="text-sm text-gray-500 mt-1">📍 {selectedPropertyForDetails.address || selectedPropertyForDetails.location}</p>
+                  <div className="mt-3 flex items-center gap-2 flex-wrap">
+                    <span className="text-xl font-bold text-gray-800">{formatPrice(selectedPropertyForDetails.price)}</span>
+                    <span className="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-medium">For Rent</span>
+                    <span className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full font-medium">{selectedPropertyForDetails.type}</span>
+                  </div>
+                </div>
+
+                {/* Features */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gray-50 px-4 py-3 rounded-xl shadow-sm flex items-center gap-2">🛏️ {selectedPropertyForDetails.bedrooms} Bedrooms</div>
+                  <div className="bg-gray-50 px-4 py-3 rounded-xl shadow-sm flex items-center gap-2">🛁 {selectedPropertyForDetails.bathrooms} Bathrooms</div>
+                  <div className="bg-gray-50 px-4 py-3 rounded-xl shadow-sm flex items-center gap-2">📐 {selectedPropertyForDetails.sqft} Sq Ft</div>
+                  <div className="bg-gray-50 px-4 py-3 rounded-xl shadow-sm flex items-center gap-2">🚗 {selectedPropertyForDetails.parking} Parking</div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <h3 className="font-semibold">Description</h3>
+                  <p className="text-sm text-gray-600">{selectedPropertyForDetails.description}</p>
+                </div>
+
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">Year: {selectedPropertyForDetails.year_built}</span>
+                  <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">{selectedPropertyForDetails.furnished}</span>
+                  <span className="bg-pink-100 text-pink-700 text-xs px-2 py-1 rounded-full">
+                    {selectedPropertyForDetails.pet_friendly ? 'Pet Friendly' : 'No Pets'}
+                  </span>
+                </div>
+
+                {/* Amenities */}
+                <div>
+                  <h3 className="font-semibold">Amenities</h3>
+                  <ul className="grid grid-cols-2 gap-x-4 text-sm text-gray-600 list-disc list-inside">
+                    {selectedPropertyForDetails.amenities && selectedPropertyForDetails.amenities.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Agent Info */}
+                <div className="border-t pt-3">
+                  <p className="text-gray-800 font-semibold">Agent: {selectedPropertyForDetails.agent_name}</p>
+                  <p className="text-sm text-gray-600">📞 {selectedPropertyForDetails.agent_phone}</p>
+                  <p className="text-sm text-gray-600">✉️ {selectedPropertyForDetails.agent_email}</p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      handleBookNow(selectedPropertyForDetails);
+                    }}
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Book Now
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      handleMakePayment(selectedPropertyForDetails);
+                    }}
+                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Make Payment
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Dialog>
+      )}
 
       {/* Booking Modal */}
       <Dialog open={showBookingModal} onClose={() => setShowBookingModal(false)} className="fixed inset-0 z-50">
