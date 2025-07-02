@@ -2,6 +2,9 @@
 
 **Wealth Home** is a modern and fully responsive real estate web application that helps users browse rental properties in Bahrain. It allows users to filter listings, view detailed property information, and interact with property agents for booking or payment. The project was built as part of a full-stack web development learning journey.
 
+> 📸 *Note: All property images used in this project were sourced online and are not specific to Bahrain. Special thanks to Google Images for providing publicly available visuals used for UI demonstration purposes.*
+
+
 ![image](https://github.com/user-attachments/assets/09e7ab71-6b4e-405a-89aa-f2c378fd8064)
 
 
