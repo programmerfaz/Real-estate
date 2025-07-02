@@ -1,11 +1,28 @@
-import React, { useState } from "react";
-import { Home as HomeIcon, Menu, X, LogOut } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { LogOut, Menu, Home as HomeIcon, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { auth } from "../firebase";
+import { Dialog } from "@headlessui/react";
+
 
 const About = () => {
     const [menuOpen, setMenuOpen] = useState(false);
-    const userEmail = "user@example.com"; // mock
-    const handleLogout = () => console.log("Logout clicked");
+    const [userEmail, setUserEmail] = useState(null);
+    const handleLogout = () => {
+        localStorage.removeItem('userEmail');
+        navigate('/login');
+    };
+
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user) {
+                setUserEmail(user.email);
+            } else {
+                setUserEmail(null);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
     return (
         <div className="bg-white text-gray-800">
@@ -46,7 +63,10 @@ const About = () => {
                             {userEmail ? (
                                 <>
                                     <span className="text-sm text-gray-600">Welcome, {userEmail.split('@')[0]}</span>
-                                    <LogOut onClick={handleLogout} className="w-5 h-5 text-red-600 hover:text-red-800 cursor-pointer" />
+                                    <LogOut
+                                        onClick={handleLogout}
+                                        className="w-5 h-5 text-red-600 hover:text-red-800 cursor-pointer"
+                                    />
                                 </>
                             ) : (
                                 <button className="text-gray-600 hover:text-blue-600 font-medium">Sign In</button>
