@@ -41,7 +41,7 @@ const Login = () => {
       {/* Left image section - hidden on small screens */}
       <div className="hidden md:block md:w-1/2 h-full">
         <img
-          src="../src/assets/signin-page.jpg"
+          src="https://images.pexels.com/photos/1438832/pexels-photo-1438832.jpeg?auto=compress&cs=tinysrgb&w=800"
           alt="Signin Visual"
           className="h-full w-full object-cover"
         />
@@ -113,7 +113,7 @@ const Login = () => {
             className="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white hover:bg-gray-100 text-gray-800 py-2 rounded-md text-sm font-medium transition duration-300"
           >
             <img
-              src="../src/assets/google.png"
+              src="https://img.icons8.com/color/512/google-logo.png"
               alt="Google logo"
               className="w-5 h-5"
             />
