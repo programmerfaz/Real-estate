@@ -6,6 +6,5 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-  ],
-  base: '/', // 👈 Add this line
+  ]
 })
