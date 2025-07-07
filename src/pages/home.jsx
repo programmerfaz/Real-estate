@@ -89,11 +89,11 @@ const Home = () => {
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-8">
-              <a href="./Home" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Properties</a>
-              <a href="./Buy" className="text-gray-600 hover:text-blue-600 font-medium">Buy</a>
-              <a href="./Rent" className="text-gray-600 hover:text-blue-600 font-medium">Rent</a>
-              <a href="./AIHelp" className="text-gray-600 hover:text-blue-600 font-medium">AI Help</a>
-              <a href="./About" className="text-gray-600 hover:text-blue-600 font-medium">About</a>
+              <Link to="/Home" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Properties</Link>
+              <Link to="/Buy" className="text-gray-600 hover:text-blue-600 font-medium">Buy</Link>
+              <Link to="/Rent" className="text-gray-600 hover:text-blue-600 font-medium">Rent</Link>
+              <Link to="/AIHelp" className="text-gray-600 hover:text-blue-600 font-medium">AI Help</Link>
+              <Link to="/About" className="text-gray-600 hover:text-blue-600 font-medium">About</Link>
             </nav>
 
             {/* Mobile menu toggle */}
@@ -128,11 +128,11 @@ const Home = () => {
           {/* Mobile dropdown */}
           {menuOpen && (
             <div className="md:hidden bg-white border-t border-gray-200 pt-4 pb-4 space-y-2">
-              <a href="./Home" className="block px-4 text-blue-600 font-medium">Properties</a>
-              <a href="./Buy" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Buy</a>
-              <a href="./Rent" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Rent</a>
-              <a href="./AIHelp" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">AI Help</a>
-              <a href="./About" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">About</a>
+              <Link to="/Home" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Properties</Link>
+              <Link to="/Buy" className="text-gray-600 hover:text-blue-600 font-medium">Buy</Link>
+              <Link to="/Rent" className="text-gray-600 hover:text-blue-600 font-medium">Rent</Link>
+              <Link to="/AIHelp" className="text-gray-600 hover:text-blue-600 font-medium">AI Help</Link>
+              <Link to="/About" className="text-gray-600 hover:text-blue-600 font-medium">About</Link>
               <Link to="/Favourites">
                 <div className="px-4">
                   <button className="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
@@ -166,7 +166,7 @@ const Home = () => {
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
           }}></div>
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
@@ -175,16 +175,16 @@ const Home = () => {
                 <MapPin className="w-4 h-4 mr-2" />
                 Serving All of Bahrain
               </div>
-              
+
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
                 Find Your
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-cyan-300">
                   Dream Home
                 </span>
               </h1>
-              
+
               <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                Discover premium properties across Bahrain's most prestigious locations. 
+                Discover premium properties across Bahrain's most prestigious locations.
                 From luxury villas to modern apartments, your perfect home awaits.
               </p>
 
@@ -196,7 +196,7 @@ const Home = () => {
                     <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </Link>
-                
+
                 <Link to="/AIHelp">
                   <button className="group border-2 border-white text-white px-8 py-4 rounded-xl hover:bg-white hover:text-blue-900 transition-all duration-300 font-semibold text-lg flex items-center justify-center">
                     <MessageCircle className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
@@ -225,7 +225,7 @@ const Home = () => {
             {/* Right Content - Feature Cards */}
             <div className="space-y-6">
               {features.map((feature, index) => (
-                <div 
+                <div
                   key={index}
                   className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 hover:bg-white/15 transition-all duration-300 transform hover:scale-105"
                 >

@@ -333,11 +333,12 @@ const Rent = () => {
                         </div>
 
                         <nav className="hidden md:flex items-center gap-8">
-                            <a href="./Home" className="text-gray-600 hover:text-blue-600 font-medium">Properties</a>
-                            <a href="./Buy" className="text-gray-600 hover:text-blue-600 font-medium">Buy</a>
-                            <a href="./Rent" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Rent</a>
-                            <a href="./AIHelp" className="text-gray-600 hover:text-blue-600 font-medium">AI Help</a>
-                            <a href="./About" className="text-gray-600 hover:text-blue-600 font-medium">About</a>
+                            <Link to="/Home" className="text-gray-600 hover:text-blue-600 font-medium">Properties</Link>
+                            <Link to="/Buy" className="text-gray-600 hover:text-blue-600 font-medium">Buy</Link>
+                            <Link to="/Rent" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Rent</Link>
+                            <Link to="/AIHelp" className="text-gray-600 hover:text-blue-600 font-medium">AI Help</Link>
+                            <Link to="/About" className="text-gray-600 hover:text-blue-600 font-medium">About</Link>
+
                         </nav>
 
                         <button
@@ -369,11 +370,11 @@ const Rent = () => {
 
                     {menuOpen && (
                         <div className="md:hidden bg-white border-t border-gray-200 pt-4 pb-4 space-y-2">
-                            <a href="./Home" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Properties</a>
-                            <a href="./Buy" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Buy</a>
-                            <a href="./Rent" className="block px-4 text-blue-600 font-medium">Rent</a>
-                            <a href="./AIHelp" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">AI Help</a>
-                            <a href="./About" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">About</a>
+                           <Link to="/Home" className="text-gray-600 hover:text-blue-600 font-medium">Properties</Link>
+                            <Link to="/Buy" className="text-gray-600 hover:text-blue-600 font-medium">Buy</Link>
+                            <Link to="/Rent" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Rent</Link>
+                            <Link to="/AIHelp" className="text-gray-600 hover:text-blue-600 font-medium">AI Help</Link>
+                            <Link to="/About" className="text-gray-600 hover:text-blue-600 font-medium">About</Link>
                             <Link to="/Favourites">
                                 <div className="px-4">
                                     <button className="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">

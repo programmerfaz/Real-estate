@@ -45,7 +45,7 @@ const Buy = ({ viewMode }) => {
                     }
                 };
                 fetchFavourites();
-                
+
                 // Load recently viewed from localStorage
                 const viewed = JSON.parse(localStorage.getItem(`recentlyViewed_${user.email}`) || '[]');
                 setRecentlyViewed(viewed);
@@ -224,7 +224,7 @@ const Buy = ({ viewMode }) => {
 
     const saveCurrentSearch = async () => {
         if (!userEmail) return;
-        
+
         const searchData = {
             user_email: userEmail,
             search_name: `Search ${new Date().toLocaleDateString()}`,
@@ -250,7 +250,7 @@ const Buy = ({ viewMode }) => {
 
     const trackPropertyView = (propertyId) => {
         if (!userEmail) return;
-        
+
         const viewed = JSON.parse(localStorage.getItem(`recentlyViewed_${userEmail}`) || '[]');
         const updatedViewed = [propertyId, ...viewed.filter(id => id !== propertyId)].slice(0, 10);
         localStorage.setItem(`recentlyViewed_${userEmail}`, JSON.stringify(updatedViewed));
@@ -283,11 +283,11 @@ const Buy = ({ viewMode }) => {
                         </div>
 
                         <nav className="hidden md:flex items-center gap-8">
-                            <a href="./Home" className="text-gray-600 hover:text-blue-600 font-medium">Properties</a>
-                            <a href="./Buy" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Buy</a>
-                            <a href="./Rent" className="text-gray-600 hover:text-blue-600 font-medium">Rent</a>
-                            <a href="./AIHelp" className="text-gray-600 hover:text-blue-600 font-medium">AI Help</a>
-                            <a href="./About" className="text-gray-600 hover:text-blue-600 font-medium">About</a>
+                            <Link to="/Home" className="text-gray-600 hover:text-blue-600 font-medium">Properties</Link>
+                            <Link to="/Buy" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Buy</Link>
+                            <Link to="/Rent" className="text-gray-600 hover:text-blue-600 font-medium">Rent</Link>
+                            <Link to="/AIHelp" className="text-gray-600 hover:text-blue-600 font-medium">AI Help</Link>
+                            <Link to="/About" className="text-gray-600 hover:text-blue-600 font-medium">About</Link>
                         </nav>
 
                         <button
@@ -319,11 +319,11 @@ const Buy = ({ viewMode }) => {
 
                     {menuOpen && (
                         <div className="md:hidden bg-white border-t border-gray-200 pt-4 pb-4 space-y-2">
-                            <a href="./Home" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Properties</a>
-                            <a href="./Buy" className="block px-4 text-blue-600 font-medium">Buy</a>
-                            <a href="./Rent" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">Rent</a>
-                            <a href="./AIHelp" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">AI Help</a>
-                            <a href="./About" className="block px-4 text-gray-600 hover:text-blue-600 font-medium">About</a>
+                            <Link to="/Home" className="text-gray-600 hover:text-blue-600 font-medium">Properties</Link>
+                            <Link to="/Buy" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Buy</Link>
+                            <Link to="/Rent" className="text-gray-600 hover:text-blue-600 font-medium">Rent</Link>
+                            <Link to="/AIHelp" className="text-gray-600 hover:text-blue-600 font-medium">AI Help</Link>
+                            <Link to="/About" className="text-gray-600 hover:text-blue-600 font-medium">About</Link>
                             <Link to="/Favourites">
                                 <div className="px-4">
                                     <button className="mt-2 w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
@@ -363,7 +363,7 @@ const Buy = ({ viewMode }) => {
                                 className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
                             />
                         </div>
-                        
+
                         <div className="flex items-center gap-3">
                             <select
                                 value={sortBy}
@@ -379,18 +379,16 @@ const Buy = ({ viewMode }) => {
                             <div className="flex bg-gray-100 rounded-xl p-1">
                                 <button
                                     onClick={() => setViewType('grid')}
-                                    className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
-                                        viewType === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
-                                    }`}
+                                    className={`flex items-center px-3 py-2 rounded-lg transition-colors ${viewType === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
+                                        }`}
                                 >
                                     <Grid3X3 className="w-4 h-4 mr-1" />
                                     Grid
                                 </button>
                                 <button
                                     onClick={() => setViewType('list')}
-                                    className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
-                                        viewType === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
-                                    }`}
+                                    className={`flex items-center px-3 py-2 rounded-lg transition-colors ${viewType === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'
+                                        }`}
                                 >
                                     <List className="w-4 h-4 mr-1" />
                                     List
@@ -415,7 +413,7 @@ const Buy = ({ viewMode }) => {
                             <X className="w-6 h-6" />
                         </button>
                     </div>
-                    
+
                     <div className="p-6">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-semibold text-gray-800">
@@ -757,8 +755,8 @@ const Buy = ({ viewMode }) => {
                                 </button>
                             </div>
                         ) : (
-                            <div className={viewType === 'grid' 
-                                ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" 
+                            <div className={viewType === 'grid'
+                                ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6"
                                 : "space-y-4"
                             }>
                                 {allProperties.slice(0, visibleProperties).map((property) => (
