@@ -51,7 +51,8 @@ import {
   Maximize2
 } from 'lucide-react';
 import { Link } from "react-router-dom";
-import { supabase } from "../supabase";
+import { DUMMY_SALE_PROPERTIES } from "../data/dummyProperties";
+import { getFavouriteIds, toggleFavouriteId } from "../data/favouritesStorage";
 import { auth } from "../firebase";
 import { useNavigate } from 'react-router-dom';
 import PropertyCard from '../components/PropertyCard';
@@ -96,37 +97,15 @@ const AIHelp = () => {
   }, []);
 
   const fetchFavourites = async (email) => {
-    try {
-      const { data, error } = await supabase
-        .from('favourites')
-        .select('property_id')
-        .eq('user_email', email);
-
-      if (!error && data) {
-        const ids = data.map((fav) => fav.property_id);
-        setFavourites(ids);
-      }
-    } catch (error) {
-      console.error('Error fetching favourites:', error);
-    }
+    /* Supabase favourites — replaced with localStorage demo */
+    setFavourites(getFavouriteIds(email));
   };
 
   useEffect(() => {
-    const fetchProperties = async () => {
-      try {
-        const { data, error } = await supabase.from("properties").select("*");
-        if (error) {
-          console.error("Error fetching properties:", error.message);
-        } else {
-          setAllProperties(data || []);
-          generateInitialRecommendations(data || []);
-        }
-      } catch (error) {
-        console.error("Error in fetchProperties:", error);
-        setAllProperties([]);
-      }
-    };
-    fetchProperties();
+    /* Supabase properties.select — replaced with dummy listings */
+    const data = DUMMY_SALE_PROPERTIES;
+    setAllProperties(data);
+    generateInitialRecommendations(data);
   }, []);
 
   useEffect(() => {
@@ -224,31 +203,8 @@ Please specify your property requirements for analysis.`
       return;
     }
 
-    const isFavourite = favourites.includes(propertyId);
-
-    try {
-      if (isFavourite) {
-        const { error } = await supabase
-          .from('favourites')
-          .delete()
-          .eq('user_email', userEmail)
-          .eq('property_id', propertyId);
-
-        if (!error) {
-          setFavourites(favourites.filter((id) => id !== propertyId));
-        }
-      } else {
-        const { error } = await supabase.from('favourites').insert([
-          { user_email: userEmail, property_id: propertyId },
-        ]);
-
-        if (!error) {
-          setFavourites([...favourites, propertyId]);
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling favourite:', error);
-    }
+    const next = toggleFavouriteId(userEmail, propertyId);
+    setFavourites(next);
   };
 
   const getPropertyRecommendations = (userQuery) => {

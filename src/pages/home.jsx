@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { TrendingUp, Award, Users, LogOut, Menu, Filter, X, Home as HomeIcon, ArrowRight, MessageCircle, MapPin, Building, Key, Shield } from 'lucide-react';
 import PropertyCard from '../components/PropertyCard';
 import { Link } from "react-router-dom";
-import { supabase } from "../supabase";
+import { DUMMY_SALE_PROPERTIES } from "../data/dummyProperties";
 import { auth } from "../firebase";
 import { useNavigate } from 'react-router-dom';
 
@@ -14,16 +14,8 @@ const Home = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const fetchProperties = async () => {
-      const { data, error } = await supabase.from("properties").select("*");
-      if (error) {
-        console.error("Error fetching properties:", error.message);
-      } else {
-        setAllProperties(data);
-      }
-    };
-
-    fetchProperties();
+    /* Supabase: await supabase.from("properties").select("*") */
+    setAllProperties(DUMMY_SALE_PROPERTIES);
   }, []);
 
   const [userEmail, setUserEmail] = useState(null);
@@ -283,6 +275,8 @@ const Home = () => {
                 {...property}
                 formatPrice={formatPrice}
                 showViewButton={false}
+                isFavourite={false}
+                toggleFavourite={() => {}}
               />
             ))}
           </div>

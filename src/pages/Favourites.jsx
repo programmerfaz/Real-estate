@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { MapPin, Bed, Bath, Square, Car, Star, TrendingUp, Award, Users, LogOut, Menu, Home as HomeIcon, Filter, X } from "lucide-react";
-import { supabase } from '../supabase';
 import { auth } from '../firebase';
+import { DUMMY_SALE_PROPERTIES } from '../data/dummyProperties';
+import { getFavouriteIds, toggleFavouriteId } from '../data/favouritesStorage';
 import PropertyCard from '../components/PropertyCard'; // adjust path if needed
 import { Link } from "react-router-dom";
 import { useNavigate } from 'react-router-dom';
@@ -38,76 +39,24 @@ const Favorites = () => {
             return;
         }
 
-        // Check if property is already in favourites
-        const isAlreadyFavourite = favouriteProperties.some(p => p.id === propertyId);
-
-        if (isAlreadyFavourite) {
-            // Find the favourite record id in the favourites table (you'll need to fetch this or query)
-            // Since your current fetch does not include favourites id, you must fetch it or delete by user_email + property_id
-
-            const { error } = await supabase
-                .from("favourites")
-                .delete()
-                .match({ user_email: userEmail, property_id: propertyId });
-
-            if (error) {
-                console.error("Error removing favourite:", error.message);
-            } else {
-                // Update UI state after deletion
-                setFavouriteProperties(prev => prev.filter(p => p.id !== propertyId));
-            }
-        } else {
-            // Add new favourite record
-            const { error } = await supabase
-                .from("favourites")
-                .insert([{ user_email: userEmail, property_id: propertyId }]);
-
-            if (error) {
-                console.error("Error adding favourite:", error.message);
-            } else {
-                // Optionally refetch or add the property to favouriteProperties state
-                // For simplicity, refetch all favourites:
-                fetchFavouriteProperties();
-            }
-        }
+        /* Supabase favourites table — replaced with localStorage (see favouritesStorage.js) */
+        toggleFavouriteId(userEmail, propertyId);
+        const ids = getFavouriteIds(userEmail);
+        setFavouriteProperties(
+            DUMMY_SALE_PROPERTIES.filter((p) => ids.includes(Number(p.id)))
+        );
     };
 
 
     useEffect(() => {
-        const fetchFavouriteProperties = async () => {
-            if (!userEmail) return;
-
-            // Step 1: Get favourited property IDs
-            const { data: favData, error: favError } = await supabase
-                .from("favourites")
-                .select("property_id")
-                .eq("user_email", userEmail);
-
-            if (favError) {
-                console.error("Error fetching favourites:", favError.message);
-                return;
-            }
-
-            const ids = favData.map((fav) => fav.property_id);
-
-            // Step 2: Get property details by IDs
-            if (ids.length > 0) {
-                const { data: properties, error: propError } = await supabase
-                    .from("properties")
-                    .select("*")
-                    .in("id", ids);
-
-                if (propError) {
-                    console.error("Error fetching properties:", propError.message);
-                } else {
-                    setFavouriteProperties(properties);
-                }
-            } else {
-                setFavouriteProperties([]); // no favourites
-            }
-        };
-
-        fetchFavouriteProperties();
+        if (!userEmail) {
+            setFavouriteProperties([]);
+            return;
+        }
+        const ids = getFavouriteIds(userEmail);
+        setFavouriteProperties(
+            DUMMY_SALE_PROPERTIES.filter((p) => ids.includes(Number(p.id)))
+        );
     }, [userEmail]);
 
 

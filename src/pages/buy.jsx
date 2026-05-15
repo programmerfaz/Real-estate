@@ -3,13 +3,20 @@ import { MapPin, Bed, Bath, Square, Car, Star, TrendingUp, Award, Users, LogOut,
 import SearchBar from '../components/SearchBar';
 import PropertyCard from "../components/PropertyCard";
 import { Link } from "react-router-dom";
-import { supabase } from "../supabase";
 import { useNavigate } from 'react-router-dom';
 import { auth } from "../firebase";
+import { DUMMY_SALE_PROPERTIES } from "../data/dummyProperties";
+import { applySaleFilters } from "../data/propertyFilters";
+import {
+    getFavouriteIds,
+    toggleFavouriteId,
+    appendSavedSearch,
+} from "../data/favouritesStorage";
 
 const formatPrice = (price) => `${price.toLocaleString()} BHD`;
 
 const Buy = ({ viewMode }) => {
+    const navigate = useNavigate();
     const [userEmail, setUserEmail] = useState(null);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
@@ -31,20 +38,8 @@ const Buy = ({ viewMode }) => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
             if (user) {
                 setUserEmail(user.email);
-                const fetchFavourites = async () => {
-                    const { data, error } = await supabase
-                        .from('favourites')
-                        .select('property_id')
-                        .eq('user_email', user.email);
-
-                    if (!error) {
-                        const ids = data.map((fav) => fav.property_id);
-                        setFavourites(ids);
-                    } else {
-                        console.error('Error fetching favourites:', error.message);
-                    }
-                };
-                fetchFavourites();
+                /* Supabase favourites — replaced with localStorage demo */
+                setFavourites(getFavouriteIds(user.email));
 
                 // Load recently viewed from localStorage
                 const viewed = JSON.parse(localStorage.getItem(`recentlyViewed_${user.email}`) || '[]');
@@ -69,101 +64,35 @@ const Buy = ({ viewMode }) => {
     const [furnishedValue, setFurnishedValue] = useState('');
     const [selectedAmenities, setSelectedAmenities] = useState([]);
 
-    const navigate = useNavigate();
-
-    // Enhanced property fetching with search and sort
+    /* Client-side filters over dummy data (Supabase query commented out above) */
     useEffect(() => {
-        const fetchProperties = async () => {
-            setIsLoading(true);
-            let query = supabase.from("properties").select("*");
-
-            // Search functionality
-            if (searchQuery.trim()) {
-                query = query.or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-            }
-
-            // Location filter
-            if (selectedLocations.length > 0) {
-                const orFilter = selectedLocations
-                    .map((loc) => `location.ilike.%${loc}%`)
-                    .join(",");
-                query = query.or(orFilter);
-            }
-
-            // Price filter
-            if (selectedPriceRange) {
-                if (selectedPriceRange === "below50k") {
-                    query = query.lt("price", 50000);
-                } else if (selectedPriceRange === "50k-150k") {
-                    query = query.gte("price", 50000).lte("price", 150000);
-                } else if (selectedPriceRange === "above150k") {
-                    query = query.gt("price", 150000);
-                } else if (selectedPriceRange === "custom") {
-                    query = query.gte("price", customPriceRange.min).lte("price", customPriceRange.max);
-                }
-            }
-
-            // Other filters
-            if (selectedBedrooms !== "Any") {
-                const minBedrooms = parseInt(selectedBedrooms);
-                if (!isNaN(minBedrooms)) {
-                    query = query.gte("bedrooms", minBedrooms);
-                }
-            }
-            if (selectedBathrooms !== "Any") {
-                const minBathrooms = parseInt(selectedBathrooms);
-                if (!isNaN(minBathrooms)) {
-                    query = query.gte("bathrooms", minBathrooms);
-                }
-            }
-            if (selectedYearBuilt === "2020+") {
-                query = query.gte("year_built", 2020);
-            } else if (selectedYearBuilt === "Before 2020") {
-                query = query.lt("year_built", 2020);
-            } else if (selectedYearBuilt !== "Any") {
-                const minYearBuilt = parseInt(selectedYearBuilt);
-                if (!isNaN(minYearBuilt)) {
-                    query = query.eq("year_built", minYearBuilt);
-                }
-            }
-
-            if (furnishedValue) {
-                query = query.ilike('furnished', `%${furnishedValue}%`);
-            }
-
-            if (selectedAmenities.length > 0) {
-                query = query.contains("amenities", selectedAmenities);
-            }
-
-            // Sorting
-            switch (sortBy) {
-                case 'price-low':
-                    query = query.order('price', { ascending: true });
-                    break;
-                case 'price-high':
-                    query = query.order('price', { ascending: false });
-                    break;
-                case 'bedrooms':
-                    query = query.order('bedrooms', { ascending: false });
-                    break;
-                case 'newest':
-                default:
-                    query = query.order('id', { ascending: false });
-                    break;
-            }
-
-            const { data, error } = await query;
-
-            if (error) {
-                console.error("Error fetching properties:", error.message);
-            } else {
-                setAllProperties(data);
-            }
-            setIsLoading(false);
-        };
-
-        fetchProperties();
-    }, [selectedLocations, selectedPriceRange, customPriceRange, selectedBedrooms, selectedBathrooms, selectedYearBuilt, furnishedValue, selectedAmenities, searchQuery, sortBy]);
+        setIsLoading(true);
+        const filtered = applySaleFilters(DUMMY_SALE_PROPERTIES, {
+            searchQuery,
+            selectedLocations,
+            selectedPriceRange,
+            customPriceRange,
+            selectedBedrooms,
+            selectedBathrooms,
+            selectedYearBuilt,
+            furnishedValue,
+            selectedAmenities,
+            sortBy,
+        });
+        setAllProperties(filtered);
+        setIsLoading(false);
+    }, [
+        selectedLocations,
+        selectedPriceRange,
+        customPriceRange,
+        selectedBedrooms,
+        selectedBathrooms,
+        selectedYearBuilt,
+        furnishedValue,
+        selectedAmenities,
+        searchQuery,
+        sortBy,
+    ]);
 
     const clearAllFilters = () => {
         setSelectedLocations([]);
@@ -198,28 +127,8 @@ const Buy = ({ viewMode }) => {
 
     const toggleFavourite = async (propertyId) => {
         if (!userEmail) return;
-
-        const isFavourite = favourites.includes(propertyId);
-
-        if (isFavourite) {
-            const { error } = await supabase
-                .from('favourites')
-                .delete()
-                .eq('user_email', userEmail)
-                .eq('property_id', propertyId);
-
-            if (!error) {
-                setFavourites(favourites.filter((id) => id !== propertyId));
-            }
-        } else {
-            const { error } = await supabase.from('favourites').insert([
-                { user_email: userEmail, property_id: propertyId },
-            ]);
-
-            if (!error) {
-                setFavourites([...favourites, propertyId]);
-            }
-        }
+        const next = toggleFavouriteId(userEmail, propertyId);
+        setFavourites(next);
     };
 
     const saveCurrentSearch = async () => {
@@ -241,11 +150,8 @@ const Buy = ({ viewMode }) => {
             }
         };
 
-        const { error } = await supabase.from('saved_searches').insert([searchData]);
-        if (!error) {
-            setShowSaveSearch(false);
-            // Refresh saved searches
-        }
+        appendSavedSearch(userEmail, searchData);
+        setShowSaveSearch(false);
     };
 
     const trackPropertyView = (propertyId) => {

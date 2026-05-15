@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Bed, Bath, MapPin, Heart, Camera, Star, Phone, Mail, Car,
 } from 'lucide-react';
@@ -28,11 +28,16 @@ const PropertyCard = ({
   agent_email,
   address,
   showViewButton = true, // New prop to control button visibility
-  isFavourite,
-  toggleFavourite,
+  isFavourite = false,
+  toggleFavourite = () => {},
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const galleryImages = useMemo(() => {
+    const merged = [image, ...(images || [])].filter(Boolean);
+    return [...new Set(merged)];
+  }, [image, images]);
 
   const formatPrice = (val) => `${val.toLocaleString()} BHD`;
   // const [isFavorited, setIsFavorited] = useState(false);
@@ -81,7 +86,7 @@ const PropertyCard = ({
           {/* Image count */}
           <div className="absolute bottom-4 right-4 bg-black/50 text-white px-2 py-1 rounded-lg text-sm flex items-center gap-1">
             <Camera className="w-3 h-3" />
-            {images.length + 1}
+            {galleryImages.length}
           </div>
         </div>
 
@@ -152,25 +157,33 @@ const PropertyCard = ({
               {/* Left: Image Carousel */}
               <div className="md:w-1/2 w-full h-[400px] relative">
                 <img
-                  src={images[currentIndex]}
+                  src={galleryImages[currentIndex % Math.max(galleryImages.length, 1)]}
                   alt="property"
                   className="w-full h-full object-cover rounded-l-3xl"
                 />
                 {/* Arrows */}
                 <button
-                  onClick={() => setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                  type="button"
+                  onClick={() =>
+                    setCurrentIndex((prev) =>
+                      prev === 0 ? galleryImages.length - 1 : prev - 1
+                    )
+                  }
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-white shadow p-1 rounded-full z-10"
                 >
                   ←
                 </button>
                 <button
-                  onClick={() => setCurrentIndex((prev) => (prev + 1) % images.length)}
+                  type="button"
+                  onClick={() =>
+                    setCurrentIndex((prev) => (prev + 1) % galleryImages.length)
+                  }
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-white shadow p-1 rounded-full z-10"
                 >
                   →
                 </button>
                 <div className="absolute bottom-2 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded z-10">
-                  {currentIndex + 1} / {images.length}
+                  {galleryImages.length ? currentIndex + 1 : 0} / {galleryImages.length || 1}
                 </div>
               </div>
 

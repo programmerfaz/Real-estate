@@ -3,8 +3,9 @@ import { MapPin, Bed, Bath, Square, Car, Star, TrendingUp, Award, Users, LogOut,
 import SearchBar from '../components/SearchBar';
 import PropertyCard from "../components/PropertyCard";
 import { Link } from "react-router-dom";
-import { supabase } from "../supabase";
 import { useNavigate } from 'react-router-dom';
+import { DUMMY_RENT_PROPERTIES } from "../data/dummyProperties";
+import { applyRentFilters } from "../data/propertyFilters";
 import { auth } from "../firebase";
 import { Dialog } from "@headlessui/react";
 
@@ -80,99 +81,35 @@ const Rent = () => {
 
     const formatPrice = (price) => `${price.toLocaleString()} BHD`;
 
-    // Enhanced property fetching with search and sort - Updated to use rentproperties table
+    /* Supabase rentproperties fetch replaced with local dummy list */
     useEffect(() => {
-        const fetchProperties = async () => {
-            setIsLoading(true);
-            let query = supabase.from("rentproperties").select("*");
-
-            // Search functionality
-            if (searchQuery.trim()) {
-                query = query.or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-            }
-
-            // Location filter
-            if (selectedLocations.length > 0) {
-                const orFilter = selectedLocations
-                    .map((loc) => `location.ilike.%${loc}%`)
-                    .join(",");
-                query = query.or(orFilter);
-            }
-
-            // Price filter (adjusted for rental prices)
-            if (selectedPriceRange) {
-                if (selectedPriceRange === "below500") {
-                    query = query.lt("price", 500);
-                } else if (selectedPriceRange === "500-1500") {
-                    query = query.gte("price", 500).lte("price", 1500);
-                } else if (selectedPriceRange === "above1500") {
-                    query = query.gt("price", 1500);
-                } else if (selectedPriceRange === "custom") {
-                    query = query.gte("price", customPriceRange.min).lte("price", customPriceRange.max);
-                }
-            }
-
-            // Other filters
-            if (selectedBedrooms !== "Any") {
-                const minBedrooms = parseInt(selectedBedrooms);
-                if (!isNaN(minBedrooms)) {
-                    query = query.gte("bedrooms", minBedrooms);
-                }
-            }
-            if (selectedBathrooms !== "Any") {
-                const minBathrooms = parseInt(selectedBathrooms);
-                if (!isNaN(minBathrooms)) {
-                    query = query.gte("bathrooms", minBathrooms);
-                }
-            }
-            if (selectedYearBuilt === "2020+") {
-                query = query.gte("year_built", 2020);
-            } else if (selectedYearBuilt === "Before 2020") {
-                query = query.lt("year_built", 2020);
-            } else if (selectedYearBuilt !== "Any") {
-                const minYearBuilt = parseInt(selectedYearBuilt);
-                if (!isNaN(minYearBuilt)) {
-                    query = query.eq("year_built", minYearBuilt);
-                }
-            }
-
-            if (furnishedValue) {
-                query = query.ilike('furnished', `%${furnishedValue}%`);
-            }
-
-            if (selectedAmenities.length > 0) {
-                query = query.contains("amenities", selectedAmenities);
-            }
-
-            // Sorting
-            switch (sortBy) {
-                case 'price-low':
-                    query = query.order('price', { ascending: true });
-                    break;
-                case 'price-high':
-                    query = query.order('price', { ascending: false });
-                    break;
-                case 'bedrooms':
-                    query = query.order('bedrooms', { ascending: false });
-                    break;
-                case 'newest':
-                default:
-                    query = query.order('id', { ascending: false });
-                    break;
-            }
-
-            const { data, error } = await query;
-
-            if (error) {
-                console.error("Error fetching properties:", error.message);
-            } else {
-                setAllProperties(data);
-            }
-            setIsLoading(false);
-        };
-
-        fetchProperties();
-    }, [selectedLocations, selectedPriceRange, customPriceRange, selectedBedrooms, selectedBathrooms, selectedYearBuilt, furnishedValue, selectedAmenities, searchQuery, sortBy]);
+        setIsLoading(true);
+        const filtered = applyRentFilters(DUMMY_RENT_PROPERTIES, {
+            searchQuery,
+            selectedLocations,
+            selectedPriceRange,
+            customPriceRange,
+            selectedBedrooms,
+            selectedBathrooms,
+            selectedYearBuilt,
+            furnishedValue,
+            selectedAmenities,
+            sortBy,
+        });
+        setAllProperties(filtered);
+        setIsLoading(false);
+    }, [
+        selectedLocations,
+        selectedPriceRange,
+        customPriceRange,
+        selectedBedrooms,
+        selectedBathrooms,
+        selectedYearBuilt,
+        furnishedValue,
+        selectedAmenities,
+        searchQuery,
+        sortBy,
+    ]);
 
     const clearAllFilters = () => {
         setSelectedLocations([]);
