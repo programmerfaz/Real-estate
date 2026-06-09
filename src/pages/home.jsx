@@ -3,7 +3,7 @@ import { TrendingUp, Award, Users, LogOut, Menu, Filter, X, Home as HomeIcon, Ar
 import PropertyCard from '../components/PropertyCard';
 import { Link } from "react-router-dom";
 import { DUMMY_SALE_PROPERTIES } from "../data/dummyProperties";
-import { auth } from "../firebase";
+import { auth } from "../auth/localAuth";
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
@@ -21,10 +21,8 @@ const Home = () => {
   const [userEmail, setUserEmail] = useState(null);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    // Clear user session (adjust based on how you store auth info)
-    localStorage.removeItem('userEmail');
-    // Redirect to sign-in
+  const handleLogout = async () => {
+    await auth.signOut();
     navigate('/login');
   };
 

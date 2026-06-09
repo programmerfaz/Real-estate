@@ -4,7 +4,7 @@ import SearchBar from '../components/SearchBar';
 import PropertyCard from "../components/PropertyCard";
 import { Link } from "react-router-dom";
 import { useNavigate } from 'react-router-dom';
-import { auth } from "../firebase";
+import { auth } from "../auth/localAuth";
 import { DUMMY_SALE_PROPERTIES } from "../data/dummyProperties";
 import { applySaleFilters } from "../data/propertyFilters";
 import {
@@ -29,8 +29,8 @@ const Buy = ({ viewMode }) => {
     const [showSaveSearch, setShowSaveSearch] = useState(false);
     const [recentlyViewed, setRecentlyViewed] = useState([]);
 
-    const handleLogout = () => {
-        localStorage.removeItem('userEmail');
+    const handleLogout = async () => {
+        await auth.signOut();
         navigate('/login');
     };
 

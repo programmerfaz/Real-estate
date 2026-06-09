@@ -53,7 +53,7 @@ import {
 import { Link } from "react-router-dom";
 import { DUMMY_SALE_PROPERTIES } from "../data/dummyProperties";
 import { getFavouriteIds, toggleFavouriteId } from "../data/favouritesStorage";
-import { auth } from "../firebase";
+import { auth } from "../auth/localAuth";
 import { useNavigate } from 'react-router-dom';
 import PropertyCard from '../components/PropertyCard';
 
@@ -171,7 +171,6 @@ Please specify your property requirements for analysis.`
   const handleLogout = async () => {
     try {
       await auth.signOut();
-      localStorage.removeItem('userEmail');
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);

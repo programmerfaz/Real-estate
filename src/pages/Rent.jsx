@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { useNavigate } from 'react-router-dom';
 import { DUMMY_RENT_PROPERTIES } from "../data/dummyProperties";
 import { applyRentFilters } from "../data/propertyFilters";
-import { auth } from "../firebase";
+import { auth } from "../auth/localAuth";
 import { Dialog } from "@headlessui/react";
 
 const Rent = () => {
@@ -50,8 +50,8 @@ const Rent = () => {
     const [showSuccessMessage, setShowSuccessMessage] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
-    const handleLogout = () => {
-        localStorage.removeItem('userEmail');
+    const handleLogout = async () => {
+        await auth.signOut();
         navigate('/login');
     };
 

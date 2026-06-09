@@ -13,7 +13,7 @@ function App() {
   return (
     <Routes>
       {/* Redirect from / to /signup */}
-      <Route path="/" element={<Navigate to="/Login" replace />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/login" element={<Login />} />
       <Route path="/home" element={<Home />} /> 

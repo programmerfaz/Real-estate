@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { LogOut, Menu, Home as HomeIcon, X } from "lucide-react";
-import { Link } from "react-router-dom";
-import { auth } from "../firebase";
+import { Link, useNavigate } from "react-router-dom";
+import { auth } from "../auth/localAuth";
 import { Dialog } from "@headlessui/react";
 
 
 const About = () => {
+    const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
     const [userEmail, setUserEmail] = useState(null);
-    const handleLogout = () => {
-        localStorage.removeItem('userEmail');
+    const handleLogout = async () => {
+        await auth.signOut();
         navigate('/login');
     };
 

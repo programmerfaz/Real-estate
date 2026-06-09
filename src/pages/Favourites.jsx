@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MapPin, Bed, Bath, Square, Car, Star, TrendingUp, Award, Users, LogOut, Menu, Home as HomeIcon, Filter, X } from "lucide-react";
-import { auth } from '../firebase';
+import { auth } from '../auth/localAuth';
 import { DUMMY_SALE_PROPERTIES } from '../data/dummyProperties';
 import { getFavouriteIds, toggleFavouriteId } from '../data/favouritesStorage';
 import PropertyCard from '../components/PropertyCard'; // adjust path if needed
@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { useNavigate } from 'react-router-dom';
 
 const Favorites = () => {
+    const navigate = useNavigate();
     const [userEmail, setUserEmail] = useState(null);
     const [favouriteProperties, setFavouriteProperties] = useState([]);
     const [menuOpen, setMenuOpen] = useState(false);
@@ -16,6 +17,7 @@ const Favorites = () => {
         try {
             await auth.signOut();
             setUserEmail(null);
+            navigate('/login');
         } catch (error) {
             console.error("Logout error:", error);
         }
