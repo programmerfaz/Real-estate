@@ -1,36 +1,25 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { registerUser } from "../auth/localAuth";
 import "../App.css";
-
-const SHOW_GOOGLE_AUTH = false;
 
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSignup = async (e) => {
+  const handleSignup = (e) => {
     e.preventDefault();
     setError("");
-    if (password !== confirmPassword) {
+    if (password && confirmPassword && password !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
-    setLoading(true);
-    try {
-      await registerUser(email, password);
-      navigate("/login");
-    } catch (err) {
-      setError(err.message || "Registration failed.");
-    } finally {
-      setLoading(false);
-    }
+    // Dummy signup — no server, go straight to login
+    navigate("/login");
   };
 
   const goToLogin = () => {
@@ -62,7 +51,6 @@ const Signup = () => {
               type="email"
               placeholder="Email"
               value={email}
-              required
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
@@ -72,8 +60,6 @@ const Signup = () => {
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={password}
-                required
-                minLength={6}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
@@ -92,8 +78,6 @@ const Signup = () => {
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Confirm Password"
                 value={confirmPassword}
-                required
-                minLength={6}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
@@ -109,24 +93,11 @@ const Signup = () => {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white py-2 rounded-md text-sm font-medium transition duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md text-sm font-medium transition duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
-              {loading ? "Creating account…" : "Sign Up"}
+              Sign Up
             </button>
           </form>
-
-          {SHOW_GOOGLE_AUTH && (
-            <>
-              <div className="my-6 border-t border-gray-300" />
-              <button
-                type="button"
-                className="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white hover:bg-gray-100 text-gray-800 py-2 rounded-md text-sm font-medium transition duration-300"
-              >
-                Sign Up with Google
-              </button>
-            </>
-          )}
 
           <button
             type="button"
@@ -136,6 +107,10 @@ const Signup = () => {
             Already have an account?{" "}
             <span className="text-blue-600 hover:underline">Login</span>
           </button>
+
+          <p className="text-center text-xs text-gray-400 mt-3">
+            Demo mode — nothing is saved, continue to login after signup
+          </p>
 
           {error && (
             <p className="text-red-500 text-sm mt-4 text-center">{error}</p>

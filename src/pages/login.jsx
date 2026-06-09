@@ -1,29 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginUser } from "../auth/localAuth";
-
-const SHOW_GOOGLE_AUTH = false;
+import { setSession } from "../auth/localAuth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      await loginUser(email, password);
-      navigate("/home");
-    } catch (err) {
-      setError(err.message || "Invalid email or password. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    // Dummy auth — any email/password goes through
+    setSession({
+      email: email.trim() || "guest@wealthhome.demo",
+    });
+    navigate("/home");
   };
 
   return (
@@ -51,7 +42,6 @@ const Login = () => {
               type="email"
               placeholder="Email"
               value={email}
-              required
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
@@ -61,7 +51,6 @@ const Login = () => {
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={password}
-                required
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
@@ -79,31 +68,22 @@ const Login = () => {
                 <input type="checkbox" className="accent-blue-500" />
                 Remember me
               </label>
-              <a href="/signup" className="text-gray-500 hover:underline">
+              <button
+                type="button"
+                onClick={() => navigate("/signup")}
+                className="text-gray-500 hover:underline"
+              >
                 Forgot password?
-              </a>
+              </button>
             </div>
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white py-2 rounded-md text-sm font-medium transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md text-sm font-medium transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
-              {loading ? "Logging in…" : "Login"}
+              Login
             </button>
           </form>
-
-          {SHOW_GOOGLE_AUTH && (
-            <>
-              <div className="my-6 border-t border-gray-300" />
-              <button
-                type="button"
-                className="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white hover:bg-gray-100 text-gray-800 py-2 rounded-md text-sm font-medium transition duration-300"
-              >
-                Sign in with Google
-              </button>
-            </>
-          )}
 
           <p className="text-center text-sm mt-4">
             Don’t have an account?{" "}
@@ -116,9 +96,9 @@ const Login = () => {
             </button>
           </p>
 
-          {error && (
-            <p className="text-red-500 text-sm mt-4 text-center">{error}</p>
-          )}
+          <p className="text-center text-xs text-gray-400 mt-3">
+            Demo mode — use any email and password
+          </p>
         </div>
       </div>
     </div>
